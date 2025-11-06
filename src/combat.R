@@ -26,16 +26,27 @@ player_attack <- function(state, enemy) {
     state$enemies[[enemy_idx]]$alive <- FALSE
     state$stats$kills <- state$stats$kills + 1
 
-    state <- add_message(state, sprintf("You killed %s!", enemy$name))
+    if (enemy$is_boss) {
+      state <- add_message(state, sprintf("*** YOU DEFEATED %s! ***", toupper(enemy$name)))
+    } else {
+      state <- add_message(state, sprintf("You killed %s!", enemy$name))
+    }
 
-    # Drop gold
-    gold_drop <- sample(5:15, 1) * state$level
+    # Drop gold (more for bosses)
+    gold_multiplier <- ifelse(enemy$is_boss, 5, 1)
+    gold_drop <- sample(5:15, 1) * state$level * gold_multiplier
     state$player$gold <- state$player$gold + gold_drop
     state <- add_message(state, sprintf("You gained %d gold!", gold_drop))
 
-    # Chance to drop item
-    if (runif(1) < 0.3) {
-      state <- drop_item(state, enemy)
+    # Drop items
+    if (enemy$is_boss) {
+      # Bosses always drop good loot
+      state <- drop_boss_loot(state, enemy)
+    } else {
+      # Regular enemies have 30% chance
+      if (runif(1) < 0.3) {
+        state <- drop_item(state, enemy)
+      }
     }
   }
 
@@ -170,6 +181,69 @@ drop_item <- function(state, enemy) {
 
   state$items <- c(state$items, list(new_item))
   state <- add_message(state, sprintf("%s dropped %s!", enemy$name, item_type$name))
+
+  return(state)
+}
+
+# Drop boss loot (guaranteed good items)
+drop_boss_loot <- function(state, boss) {
+  # Boss weapons (scaled to level)
+  boss_weapons <- list(
+    list(name = "Enchanted Blade", type = "weapon", effect = "weapon", value = 20 + state$level * 3, char = "/"),
+    list(name = "Dragon Slayer", type = "weapon", effect = "weapon", value = 25 + state$level * 4, char = "/"),
+    list(name = "Legendary Sword", type = "weapon", effect = "weapon", value = 30 + state$level * 5, char = "/")
+  )
+
+  # Boss armor (scaled to level)
+  boss_armor <- list(
+    list(name = "Plate Mail", type = "armor", effect = "armor", value = 8 + state$level * 2, char = "["),
+    list(name = "Dragon Scale Armor", type = "armor", effect = "armor", value = 10 + state$level * 3, char = "["),
+    list(name = "Legendary Armor", type = "armor", effect = "armor", value = 12 + state$level * 4, char = "[")
+  )
+
+  # Drop a weapon
+  weapon_type <- sample(boss_weapons, 1)[[1]]
+  new_weapon <- c(
+    weapon_type,
+    list(
+      x = boss$x,
+      y = boss$y,
+      id = length(state$items) + 1,
+      picked = FALSE
+    )
+  )
+  state$items <- c(state$items, list(new_weapon))
+  state <- add_message(state, sprintf("%s dropped %s!", boss$name, weapon_type$name))
+
+  # Drop armor
+  armor_type <- sample(boss_armor, 1)[[1]]
+  new_armor <- c(
+    armor_type,
+    list(
+      x = boss$x,
+      y = boss$y,
+      id = length(state$items) + 1,
+      picked = FALSE
+    )
+  )
+  state$items <- c(state$items, list(new_armor))
+  state <- add_message(state, sprintf("%s also dropped %s!", boss$name, armor_type$name))
+
+  # Also drop health potions
+  for (i in 1:2) {
+    potion <- list(
+      name = "Greater Health Potion",
+      type = "potion",
+      effect = "heal",
+      value = 50,
+      char = "!",
+      x = boss$x,
+      y = boss$y,
+      id = length(state$items) + 1,
+      picked = FALSE
+    )
+    state$items <- c(state$items, list(potion))
+  }
 
   return(state)
 }

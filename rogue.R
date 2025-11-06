@@ -7,6 +7,7 @@
 # Source all game modules
 source("src/game_state.R")
 source("src/dungeon_gen.R")
+source("src/fov.R")
 source("src/renderer.R")
 source("src/combat.R")
 source("src/input.R")
