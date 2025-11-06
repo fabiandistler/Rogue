@@ -16,6 +16,20 @@ source("src/input.R")
 # ============================================================================
 
 main <- function() {
+  # Check if running in interactive mode
+  if (!interactive()) {
+    cat("ERROR: This game requires an interactive R session.\n")
+    cat("Please run the game using one of these methods:\n\n")
+    cat("  Method 1: R console\n")
+    cat("    R\n")
+    cat("    > source('rogue.R')\n")
+    cat("    > main()\n\n")
+    cat("  Method 2: RStudio\n")
+    cat("    Open rogue.R and run: source('rogue.R'); main()\n\n")
+    cat("Rscript mode is not supported due to readline() limitations.\n")
+    return(invisible())
+  }
+
   # Initialize
   cat("\033[2J\033[H")  # Clear screen
   cat("=== ROGUE - The R Dungeon Crawler ===\n\n")
@@ -69,9 +83,13 @@ main <- function() {
 }
 
 # Run the game
-if (!interactive()) {
-  main()
+# Note: Automatically runs main() when sourced
+if (interactive()) {
+  cat("Game loaded! Run: main()\n")
 } else {
-  cat("Run the game with: Rscript rogue.R\n")
-  cat("Or in R console: source('rogue.R'); main()\n")
+  cat("ERROR: Rscript mode is not supported.\n")
+  cat("Please run in interactive R session:\n")
+  cat("  R\n")
+  cat("  > source('rogue.R')\n")
+  cat("  > main()\n")
 }
