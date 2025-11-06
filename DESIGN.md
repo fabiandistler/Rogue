@@ -2,14 +2,14 @@
 
 ## Vision
 
-Ein vollständiges Rogue-lite Game in **pure R** zu bauen, das beweist dass R mehr kann als nur Data Science.
+Build a complete Rogue-lite game in **pure R** to prove that R can do more than just data science.
 
 ## Core Pillars
 
-1. **Pure R** - Keine externen Dependencies
+1. **Pure R** - No external dependencies
 2. **True Rogue-lite** - Procedural generation, permadeath, meta-progression ready
-3. **Turn-based** - Passt perfekt zu R's execution model
-4. **Terminal-first** - Klassisches Roguelike-Feeling
+3. **Turn-based** - Perfect fit for R's execution model
+4. **Terminal-first** - Classic roguelike feeling
 
 ## Architecture
 
@@ -204,7 +204,7 @@ You gained 15 gold!
 ## Technical Challenges
 
 ### Solved
-- **Non-blocking input**: Using readline() in turn-based mode
+- **Non-blocking input**: Using readline() in turn-based mode (interactive R only)
 - **Terminal rendering**: ANSI escape codes
 - **State management**: Nested lists work well
 - **Procedural generation**: BSP is simple and effective
@@ -213,8 +213,9 @@ You gained 15 gold!
 - **Performance**: Lists are slow for large numbers of entities
   - Solution: Use data.table or matrices for entities
 - **Input handling**: Can't get single keypress without external packages
-  - Current: readline() requires Enter
-  - Future: Could use system() call to stty
+  - Current: readline() requires Enter AND interactive mode
+  - Rscript mode not supported due to readline() limitations
+  - Future: Could use system() call to stty for single-key input
 - **Save/Load**: Need to serialize complex nested lists
   - Solution: saveRDS/readRDS works well
 
@@ -228,6 +229,8 @@ You gained 15 gold!
 - [ ] Do stairs work?
 - [ ] Does game end on death?
 - [ ] Does game end on victory (level 10)?
+- [ ] Does interactive mode detection work?
+- [ ] Does Rscript mode show proper error message?
 
 ### Unit Testing (Future)
 - BSP dungeon generation (all rooms connected?)
@@ -248,12 +251,22 @@ Current performance on modern hardware: ✅ All targets met
 
 - **Functions**: snake_case
 - **Lists**: Named elements
-- **Comments**: Roxygen-style where appropriate
+- **Comments**: Clean and descriptive
 - **Line length**: ~80 characters
 - **No global variables** (except functions)
+- **Language**: English for all code and comments
+
+## Known Limitations
+
+1. **Rscript mode not supported**: The game requires an interactive R session because `readline()` doesn't work properly in non-interactive scripts. Users must run via R console or RStudio.
+
+2. **No single-key input**: Players must press Enter after each command (w/a/s/d) because R's `readline()` is line-buffered. True single-key input would require external packages or system calls.
+
+3. **ANSI color requirement**: The game uses ANSI escape codes for colors, which may not work in all terminals (though most modern terminals support them).
 
 ## References
 
 - [RogueBasin](http://roguebasin.com/) - Roguelike development wiki
 - [BSP Dungeon Generation](http://www.roguebasin.com/index.php?title=Basic_BSP_Dungeon_generation)
 - [ANSI Escape Codes](https://en.wikipedia.org/wiki/ANSI_escape_code)
+- [R readline() documentation](https://stat.ethz.ch/R-manual/R-devel/library/base/html/readline.html)
