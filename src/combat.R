@@ -1,0 +1,175 @@
+# ============================================================================
+# Combat System
+# ============================================================================
+# Handles combat between player and enemies
+
+# Player attacks enemy
+player_attack <- function(state, enemy) {
+  # Calculate damage
+  damage <- max(1, state$player$attack + state$player$weapon$damage - enemy$defense)
+  damage <- damage + sample(-2:2, 1)  # Random variance
+
+  # Find enemy index
+  enemy_idx <- which(sapply(state$enemies, function(e) e$id == enemy$id))
+
+  # Apply damage
+  state$enemies[[enemy_idx]]$hp <- state$enemies[[enemy_idx]]$hp - damage
+  state$stats$damage_dealt <- state$stats$damage_dealt + damage
+
+  state <- add_message(state, sprintf(
+    "You hit %s for %d damage!",
+    enemy$name, damage
+  ))
+
+  # Check if enemy died
+  if (state$enemies[[enemy_idx]]$hp <= 0) {
+    state$enemies[[enemy_idx]]$alive <- FALSE
+    state$stats$kills <- state$stats$kills + 1
+
+    state <- add_message(state, sprintf("You killed %s!", enemy$name))
+
+    # Drop gold
+    gold_drop <- sample(5:15, 1) * state$level
+    state$player$gold <- state$player$gold + gold_drop
+    state <- add_message(state, sprintf("You gained %d gold!", gold_drop))
+
+    # Chance to drop item
+    if (runif(1) < 0.3) {
+      state <- drop_item(state, enemy)
+    }
+  }
+
+  return(state)
+}
+
+# Enemy attacks player
+enemy_attack <- function(state, enemy) {
+  # Calculate damage
+  damage <- max(1, enemy$attack - state$player$defense - state$player$armor$defense)
+  damage <- damage + sample(-1:1, 1)  # Random variance
+
+  # Apply damage to player
+  state$player$hp <- state$player$hp - damage
+  state$stats$damage_taken <- state$stats$damage_taken + damage
+
+  state <- add_message(state, sprintf(
+    "%s hits you for %d damage!",
+    enemy$name, damage
+  ))
+
+  return(state)
+}
+
+# Process all enemy turns
+process_enemies <- function(state) {
+  for (i in seq_along(state$enemies)) {
+    enemy <- state$enemies[[i]]
+
+    if (!enemy$alive) next
+
+    # Simple AI: move towards player if close, otherwise random
+    dist <- abs(enemy$x - state$player$x) + abs(enemy$y - state$player$y)
+
+    if (dist == 1) {
+      # Adjacent to player - attack!
+      state <- enemy_attack(state, enemy)
+    } else if (dist <= 8) {
+      # Close to player - move towards
+      state <- move_enemy_towards_player(state, i)
+    } else {
+      # Far from player - random movement
+      state <- move_enemy_random(state, i)
+    }
+  }
+
+  return(state)
+}
+
+# Move enemy towards player
+move_enemy_towards_player <- function(state, enemy_idx) {
+  enemy <- state$enemies[[enemy_idx]]
+
+  # Calculate direction
+  dx <- sign(state$player$x - enemy$x)
+  dy <- sign(state$player$y - enemy$y)
+
+  # Try to move in preferred direction
+  if (abs(state$player$x - enemy$x) > abs(state$player$y - enemy$y)) {
+    # Prefer horizontal movement
+    new_x <- enemy$x + dx
+    new_y <- enemy$y
+
+    if (!is_walkable(state, new_x, new_y) || !is.null(get_enemy_at(state, new_x, new_y))) {
+      # Try vertical
+      new_x <- enemy$x
+      new_y <- enemy$y + dy
+    }
+  } else {
+    # Prefer vertical movement
+    new_x <- enemy$x
+    new_y <- enemy$y + dy
+
+    if (!is_walkable(state, new_x, new_y) || !is.null(get_enemy_at(state, new_x, new_y))) {
+      # Try horizontal
+      new_x <- enemy$x + dx
+      new_y <- enemy$y
+    }
+  }
+
+  # Move if valid
+  if (is_walkable(state, new_x, new_y) && is.null(get_enemy_at(state, new_x, new_y))) {
+    state$enemies[[enemy_idx]]$x <- new_x
+    state$enemies[[enemy_idx]]$y <- new_y
+  }
+
+  return(state)
+}
+
+# Move enemy randomly
+move_enemy_random <- function(state, enemy_idx) {
+  enemy <- state$enemies[[enemy_idx]]
+
+  # Random direction
+  directions <- list(
+    list(dx = 0, dy = -1),
+    list(dx = 0, dy = 1),
+    list(dx = -1, dy = 0),
+    list(dx = 1, dy = 0)
+  )
+
+  dir <- sample(directions, 1)[[1]]
+  new_x <- enemy$x + dir$dx
+  new_y <- enemy$y + dir$dy
+
+  # Move if valid
+  if (is_walkable(state, new_x, new_y) && is.null(get_enemy_at(state, new_x, new_y))) {
+    state$enemies[[enemy_idx]]$x <- new_x
+    state$enemies[[enemy_idx]]$y <- new_y
+  }
+
+  return(state)
+}
+
+# Drop item when enemy dies
+drop_item <- function(state, enemy) {
+  item_types <- list(
+    list(name = "Health Potion", type = "potion", effect = "heal", value = 30, char = "!"),
+    list(name = "Gold Pile", type = "gold", effect = "gold", value = 20, char = "$")
+  )
+
+  item_type <- sample(item_types, 1)[[1]]
+  new_item <- c(
+    item_type,
+    list(
+      x = enemy$x,
+      y = enemy$y,
+      id = length(state$items) + 1,
+      picked = FALSE
+    )
+  )
+
+  state$items <- c(state$items, list(new_item))
+  state <- add_message(state, sprintf("%s dropped %s!", enemy$name, item_type$name))
+
+  return(state)
+}

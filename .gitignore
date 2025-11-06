@@ -1,0 +1,18 @@
+# R specific
+.Rhistory
+.RData
+.Rproj.user
+*.Rproj
+
+# Game saves (if implemented)
+saves/
+*.rds
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Editor specific
+.vscode/
+.idea/
+*~
