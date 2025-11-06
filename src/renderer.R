@@ -8,7 +8,11 @@ render_game <- function(state) {
   cat("\033[2J\033[H")
 
   # Render title
-  cat("=== ROGUE - Level", state$level, "===\n\n")
+  cat("=== ROGUE - Level", state$level, "===\n")
+
+  # Show theme info
+  show_theme_info(state)
+  cat("\n")
 
   # Calculate visible area (field of view)
   view_range <- 80
@@ -22,6 +26,9 @@ render_game <- function(state) {
 
   # Create visible map
   visible_map <- state$map[min_y:max_y, min_x:max_x, drop = FALSE]
+
+  # Get theme colors
+  theme_colors <- get_theme_colors(state$theme)
 
   # Overlay entities
   for (y in 1:nrow(visible_map)) {
@@ -62,13 +69,13 @@ render_game <- function(state) {
           char <- ">"
           color <- "\033[1;32m"  # Green
         }
-        # Map tiles
+        # Map tiles (use theme colors)
         else {
           char <- visible_map[y, x]
           if (char == "#") {
-            color <- "\033[0;37m"  # Gray
+            color <- theme_colors$wall
           } else {
-            color <- "\033[0;90m"  # Dark gray
+            color <- theme_colors$floor
           }
         }
         cat(color, char, "\033[0m", sep = "")
@@ -103,12 +110,13 @@ render_ui <- function(state) {
   cat(sprintf("HP: %s %d/%d\n", hp_bar, state$player$hp, state$player$max_hp))
 
   # Player info
-  cat(sprintf("ATK: %d (+%d weapon)  DEF: %d (+%d armor)  Gold: %d\n",
+  cat(sprintf("ATK: %d (+%d weapon)  DEF: %d (+%d armor)  Gold: %d  SP: %d\n",
               state$player$attack,
               state$player$weapon$damage,
               state$player$defense,
               state$player$armor$defense,
-              state$player$gold))
+              state$player$gold,
+              state$abilities$skill_points))
 
   # Enemy count and boss indicator
   alive_enemies <- sum(sapply(state$enemies, function(e) e$alive))
@@ -120,6 +128,19 @@ render_ui <- function(state) {
               boss_indicator,
               state$level,
               state$stats$kills))
+
+  # Show active ability effects
+  active_effects <- character(0)
+  if (!is.null(state$abilities$abilities$shield_wall$active) && state$abilities$abilities$shield_wall$active) {
+    active_effects <- c(active_effects, sprintf("\033[1;34m[Shield Wall: %d]\033[0m", state$abilities$abilities$shield_wall$turns_remaining))
+  }
+  if (!is.null(state$abilities$power_strike_active) && state$abilities$power_strike_active) {
+    active_effects <- c(active_effects, "\033[1;31m[Power Strike Ready]\033[0m")
+  }
+
+  if (length(active_effects) > 0) {
+    cat(paste(active_effects, collapse = " "), "\n")
+  }
 }
 
 # Create a simple progress bar

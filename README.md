@@ -1,6 +1,8 @@
 # ROGUE - A Rogue-lite Game in Pure R
 
-A procedurally generated dungeon crawler completely implemented in R!
+A fully-featured procedurally generated dungeon crawler with meta-progression, abilities, and multiple interfaces - all implemented in R!
+
+**Now with Shiny GUI support!** 🎮
 
 ## Features
 
@@ -13,18 +15,24 @@ A procedurally generated dungeon crawler completely implemented in R!
 ### Gameplay Features
 - **Dungeon Exploration**: Explore procedurally generated rooms and corridors
 - **Field of View**: Only see what's in your line of sight - unexplored areas remain dark
-- **Combat System**: Fight against Goblins, Orcs, and Trolls
+- **Combat System**: Fight against themed enemies across multiple biomes
 - **Boss Fights**: Face powerful bosses every 3 levels with guaranteed legendary loot
+- **Special Abilities**: Unlock and use powerful abilities (Heal, Power Strike, Shield Wall, Whirlwind, Teleport)
+- **Skill Tree**: Earn skill points and unlock new abilities
+- **Dungeon Themes**: Experience 6 unique dungeon environments (Crypt, Volcano, Ice Cave, Forest, Dungeon, Temple)
+- **Meta-Progression**: Persistent unlocks and bonuses that carry between runs
 - **Loot System**: Collect gold, weapons, armor, and potions
 - **Enemy AI**: Enemies chase you or move randomly
 - **Item Management**: Equip better gear
 - **Progressive Difficulty**: More enemies in deeper levels
 
 ### Technical Features
-- **Pure R**: No external dependencies except base R
+- **Dual Interface**: Terminal-based AND Shiny web GUI
+- **Pure R Core**: No external dependencies except base R (Shiny optional for GUI)
 - **Terminal-based**: Runs in any terminal with ANSI color support
 - **Seed-based**: Reproducible runs possible
 - **Modular Architecture**: Cleanly separated components
+- **Persistent Save System**: Meta-progression saved between runs
 
 ## Installation
 
@@ -33,14 +41,16 @@ A procedurally generated dungeon crawler completely implemented in R!
 git clone https://github.com/yourusername/Rogue.git
 cd Rogue
 
-# No further dependencies needed - pure R!
+# For terminal version: No dependencies needed - pure R!
+# For Shiny GUI: Install Shiny
+R -e "install.packages('shiny')"
 ```
 
 ## How to Play
 
-### Starting the Game
+### Terminal Version (Recommended for Purists)
 ```bash
-# In R console (RECOMMENDED)
+# In R console
 R
 > source("rogue.R")
 > main()
@@ -51,12 +61,31 @@ R
 
 **Note**: Rscript mode is not supported due to `readline()` limitations. Use interactive R session.
 
-### Controls
+### Shiny GUI Version (Recommended for Beginners)
+```bash
+# In R console
+R
+> shiny::runApp("shiny_app.R")
+
+# Or in RStudio
+# Open shiny_app.R and click "Run App"
+```
+
+The GUI version features:
+- Visual dungeon map with color-coded entities
+- Click-able movement buttons
+- Ability buttons with cooldown indicators
+- Real-time stats display
+- Enemy list showing visible threats
+
+### Controls (Terminal Version)
 - `w` - Move up
 - `s` - Move down
 - `a` - Move left
 - `d` - Move right
 - `i` - Show inventory
+- `k` - Open abilities menu
+- `m` - View meta-progression stats
 - `q` - Quit game
 
 ### Objective
@@ -65,35 +94,40 @@ R
 - Collect gold and better equipment
 
 ### Game Elements
-- `@` - You (Player)
-- `g` - Goblin (20 HP, 5 ATK)
-- `o` - Orc (40 HP, 8 ATK)
-- `T` - Troll (60 HP, 12 ATK)
-- `G` - Goblin King (Boss - 100 HP, 15 ATK)
-- `O` - Orc Chieftain (Boss - 150 HP, 20 ATK)
-- `W` - Troll Warlord (Boss - 200 HP, 25 ATK)
-- `D` - Ancient Dragon (Boss - 300 HP, 35 ATK)
-- `!` - Health Potion (+30 HP)
-- `$` - Gold
-- `/` - Weapon
-- `[` - Armor
-- `>` - Stairs to next level
-- `#` - Wall
-- `.` - Floor
+- `@` - You (Player) - Cyan
+- Enemy types vary by dungeon theme:
+  - **Dark Dungeon**: Goblin, Orc, Troll
+  - **Ancient Crypt**: Skeleton, Ghost, Wraith
+  - **Volcanic Depths**: Fire Imp, Magma Beast, Ifrit
+  - **Frozen Caverns**: Ice Sprite, Frost Giant, Wendigo
+  - **Twisted Grove**: Wild Boar, Treant, Dryad
+  - **Cursed Temple**: Cultist, Gargoyle, Demon
+- Boss characters: `G`, `O`, `W`, `D`, `L`, `F`, `Y`, `E`, `A` (Magenta)
+- `!` - Health Potion (+30 HP) - Yellow
+- `$` - Gold - Yellow
+- `/` - Weapon - Yellow
+- `[` - Armor - Yellow
+- `>` - Stairs to next level - Green
+- `#` - Wall (themed colors)
+- `.` - Floor (themed colors)
 
 **Note**: Bosses appear in magenta color and drop legendary weapons and armor!
 
 ## Architecture
 
 ```
-rogue.R           # Main entry point & game loop
+rogue.R              # Main entry point & terminal game loop
+shiny_app.R          # Shiny GUI interface
 src/
-  ├── game_state.R   # State management, player, items, bosses
-  ├── dungeon_gen.R  # BSP-based procedural generation
-  ├── fov.R          # Field of View (FOV) calculation
-  ├── combat.R       # Combat system, enemy AI, boss loot
-  ├── renderer.R     # Terminal rendering with colors and FOV
-  └── input.R        # Input handling
+  ├── game_state.R         # State management, player, items, bosses
+  ├── dungeon_gen.R        # BSP-based procedural generation
+  ├── fov.R                # Field of View (FOV) calculation
+  ├── themes.R             # Dungeon themes and visual styles
+  ├── abilities.R          # Special abilities and skill tree
+  ├── meta_progression.R   # Persistent unlocks and bonuses
+  ├── combat.R             # Combat system, enemy AI, boss loot
+  ├── renderer.R           # Terminal rendering with colors and FOV
+  └── input.R              # Input handling
 ```
 
 ### Technical Details
@@ -107,30 +141,66 @@ src/
 - Raycasting algorithm reveals only visible tiles
 - Explored areas remain dimly visible
 - Unexplored areas are completely dark
-- 7-tile vision radius for atmospheric exploration
+- 7-tile vision radius (10 tiles with Dungeon Mapper unlock)
+
+**Dungeon Themes**:
+- 6 unique themes that rotate every 2 levels
+- Each theme has custom colors and enemy types
+- Bosses adapt to the current theme
+
+**Abilities System**:
+- 5 unlockable abilities with cooldowns:
+  - **Healing Surge**: Restore 30+ HP (5 turn cooldown)
+  - **Power Strike**: Deal double damage (4 turn cooldown)
+  - **Shield Wall**: Block 50% damage for 3 turns (6 turn cooldown)
+  - **Whirlwind**: Attack all adjacent enemies (7 turn cooldown)
+  - **Tactical Retreat**: Teleport to safety (10 turn cooldown)
+- Earn skill points by leveling up and defeating bosses
+- Spend points to unlock new abilities
+
+**Meta-Progression**:
+- Stats persist between runs (kills, gold, highest level)
+- Unlock permanent bonuses by achieving milestones:
+  - **Warrior Start**: +20 HP, +5 ATK at start (50 kills)
+  - **Treasure Hunter**: +50% gold drops (100 kills)
+  - **Survivor**: Start with 2 health potions (30 kills)
+  - **Weapon Master**: Better starting weapon (75 kills)
+  - **Armor Expert**: Better starting armor (75 kills)
+  - **Dungeon Mapper**: Increased FOV range (150 kills)
+  - **Boss Slayer**: +20% damage vs bosses (10 boss kills)
+- Save file stored at `~/.rogue/meta_progress.rds`
 
 **Combat System**:
 - Damage = ATK + Weapon - Enemy Defense ± Random(2)
 - Enemy AI: Chase player if distance ≤ 8, otherwise random movement
 - 30% chance for item drop on enemy death
 - Boss fights every 3 levels with guaranteed legendary loot
+- Abilities can dramatically change combat tactics
 
 **State Management**:
 - All game state in nested lists
 - Seed-based for reproducible runs
 - Message log for combat feedback
+- Persistent meta-progression across runs
 
-## Extension Possibilities
+## Feature Status
 
-### Completed Features
-- [x] Field-of-View (FOV) algorithm
-- [x] Boss fights
+### ✅ Completed Features
+- [x] Field-of-View (FOV) algorithm with raycasting
+- [x] Boss fights with themed bosses
+- [x] Shiny-based GUI with visual interface
+- [x] Meta-progression with 7 unlockable bonuses
+- [x] Special abilities and skill tree (5 abilities)
+- [x] Multiple dungeon themes (6 unique environments)
 
-### Future Enhancements
-- [ ] Shiny-based GUI
-- [ ] Meta-progression (unlocks between runs)
-- [ ] Special abilities and skill trees
-- [ ] More dungeon themes and environments
+### 🚀 Future Enhancements
+- [ ] More ability types and passive skills
+- [ ] Multiplayer co-op mode
+- [ ] Achievement system
+- [ ] Sound effects and music
+- [ ] More boss variety
+- [ ] Character classes with different starting stats
+- [ ] Equipment enchantments and upgrades
 
 ## Performance
 
@@ -142,11 +212,13 @@ src/
 ## Built With
 
 - **R** - The only programming language you need
+- **Shiny** - For the web-based GUI (optional)
 - **ANSI Escape Codes** - For terminal colors
 - **Algorithms**:
   - BSP (Binary Space Partitioning) for dungeons
-  - A* could be used for better enemy AI
+  - Raycasting for field of view
   - Breadth-First Search for corridors
+  - Persistent data storage with RDS files
 
 ## License
 
@@ -163,4 +235,24 @@ Inspired by classic roguelikes such as:
 
 ---
 
-**Pro-Tip**: Use `set.seed()` in `init_game_state()` for reproducible challenge runs!
+## Pro Tips
+
+- **Unlock Synergies**: Combine Warrior Start + Weapon Master for a powerful early game
+- **Save Abilities**: Use abilities strategically - they're most valuable in boss fights
+- **Explore Thoroughly**: More exploration = more loot and experience
+- **Meta Grinding**: Focus on unlocking Treasure Hunter early for faster progression
+- **Boss Strategy**: Use Shield Wall when fighting bosses to survive longer
+- **Reproducible Runs**: Use `set.seed()` in `init_game_state()` for challenge runs
+- **GUI vs Terminal**: GUI is easier for beginners, terminal is faster for experienced players
+
+## Screenshots
+
+### Terminal Version
+Classic roguelike experience with ANSI colors and atmospheric FOV lighting.
+
+### Shiny GUI Version
+Modern web interface with click-able controls, visual dungeon map, and real-time stats.
+
+---
+
+**Remember**: Every death makes you stronger through meta-progression!

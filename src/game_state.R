@@ -3,7 +3,7 @@
 # ============================================================================
 # Manages the core game state including player, enemies, map, and items
 
-init_game_state <- function(seed = NULL) {
+init_game_state <- function(seed = NULL, meta = NULL) {
   if (is.null(seed)) {
     seed <- sample.int(.Machine$integer.max, 1)
   }
@@ -14,6 +14,9 @@ init_game_state <- function(seed = NULL) {
 
   # Find starting position (first room center)
   start_pos <- dungeon$start_pos
+
+  # Select theme for level 1
+  theme <- select_theme_for_level(1)
 
   # Initialize player
   player <- list(
@@ -29,11 +32,42 @@ init_game_state <- function(seed = NULL) {
     armor = list(name = "Cloth Armor", defense = 2)
   )
 
+  # Apply meta progression bonuses
+  if (!is.null(meta)) {
+    player <- apply_meta_bonuses(player, meta)
+
+    # Add starting potions if survivor bonus
+    if ("survivor" %in% meta$active_bonuses) {
+      # Will add potions as items later
+    }
+  }
+
   # Spawn enemies
   enemies <- spawn_enemies(dungeon, start_pos, count = 5, level = 1)
 
+  # Apply theme to enemies
+  enemies <- apply_theme_to_enemies(enemies, theme, 1)
+
   # Spawn items
   items <- spawn_items(dungeon, start_pos, count = 3)
+
+  # Add starting potions if survivor bonus
+  if (!is.null(meta) && "survivor" %in% meta$active_bonuses) {
+    for (i in 1:2) {
+      potion <- list(
+        name = "Health Potion",
+        type = "potion",
+        effect = "heal",
+        value = 30,
+        char = "!",
+        x = start_pos$x,
+        y = start_pos$y,
+        id = length(items) + 1,
+        picked = FALSE
+      )
+      items <- c(items, list(potion))
+    }
+  }
 
   # Create state
   state <- list(
@@ -54,7 +88,10 @@ init_game_state <- function(seed = NULL) {
       damage_taken = 0
     ),
     seed = seed,
-    fov = init_fov_state(dungeon$map)
+    fov = init_fov_state(dungeon$map),
+    theme = theme,
+    abilities = init_abilities(),
+    meta = meta
   )
 
   # Calculate initial FOV
@@ -211,6 +248,21 @@ process_action <- function(state, action) {
     return(state)
   }
 
+  if (action == "abilities") {
+    state <- show_abilities(state)
+    return(state)
+  }
+
+  if (action == "meta") {
+    if (!is.null(state$meta)) {
+      cat("\033[2J\033[H")
+      show_meta_stats(state$meta)
+      cat("\nPress ENTER to continue...")
+      readline()
+    }
+    return(state)
+  }
+
   # Handle movement
   if (action %in% c("w", "a", "s", "d")) {
     new_pos <- calculate_new_position(state$player, action)
@@ -322,6 +374,9 @@ pickup_item <- function(state, item) {
 descend_stairs <- function(state) {
   state$level <- state$level + 1
 
+  # Gain skill point
+  state <- gain_skill_point(state)
+
   # Check if this is a boss level
   if (state$level %% 3 == 0) {
     state <- add_message(state, sprintf("*** BOSS LEVEL %d ***", state$level))
@@ -329,6 +384,9 @@ descend_stairs <- function(state) {
   } else {
     state <- add_message(state, sprintf("You descend to level %d!", state$level))
   }
+
+  # Select new theme
+  state$theme <- select_theme_for_level(state$level)
 
   # Generate new dungeon
   dungeon <- generate_dungeon(width = 40, height = 20, difficulty = state$level)
@@ -342,7 +400,13 @@ descend_stairs <- function(state) {
 
   # Reinitialize FOV for new level
   state$fov <- init_fov_state(dungeon$map)
-  state <- calculate_fov(state)
+
+  # Apply dungeon mapper bonus (increased FOV)
+  if (!is.null(state$meta) && "dungeon_mapper" %in% state$meta$active_bonuses) {
+    state <- calculate_fov(state, radius = 10)
+  } else {
+    state <- calculate_fov(state)
+  }
 
   # Heal player slightly
   state$player$hp <- min(state$player$max_hp, state$player$hp + 20)
@@ -350,6 +414,9 @@ descend_stairs <- function(state) {
   # Spawn more enemies
   enemy_count <- 5 + state$level
   state$enemies <- spawn_enemies(dungeon, dungeon$start_pos, count = enemy_count, level = state$level)
+
+  # Apply theme to enemies
+  state$enemies <- apply_theme_to_enemies(state$enemies, state$theme, state$level)
 
   # Spawn more items
   item_count <- 3 + floor(state$level / 2)

@@ -8,6 +8,9 @@
 source("src/game_state.R")
 source("src/dungeon_gen.R")
 source("src/fov.R")
+source("src/themes.R")
+source("src/abilities.R")
+source("src/meta_progression.R")
 source("src/renderer.R")
 source("src/combat.R")
 source("src/input.R")
@@ -31,6 +34,21 @@ main <- function() {
     return(invisible())
   }
 
+  # Load meta progression
+  meta <- load_meta_progression()
+
+  # Show meta progression stats
+  cat("\033[2J\033[H")  # Clear screen
+  cat("=== ROGUE - The R Dungeon Crawler ===\n\n")
+  show_meta_stats(meta)
+  cat("\nPress ENTER to continue...")
+  readline()
+
+  # Select bonuses
+  if (any(sapply(meta$unlocks, isTRUE))) {
+    meta <- select_bonuses(meta)
+  }
+
   # Initialize
   cat("\033[2J\033[H")  # Clear screen
   cat("=== ROGUE - The R Dungeon Crawler ===\n\n")
@@ -39,12 +57,14 @@ main <- function() {
   cat("Controls:\n")
   cat("  w/a/s/d - Move\n")
   cat("  q - Quit\n")
-  cat("  i - Inventory\n\n")
+  cat("  i - Inventory\n")
+  cat("  k - Abilities\n")
+  cat("  m - Meta Stats\n\n")
   cat("Press ENTER to begin...")
   readline()
 
   # Create initial game state
-  state <- init_game_state()
+  state <- init_game_state(meta = meta)
 
   # Main game loop
   while (state$running) {
@@ -60,12 +80,17 @@ main <- function() {
     # Process enemies turn
     if (state$player_acted) {
       state <- process_enemies(state)
+      state <- update_cooldowns(state)
       state$player_acted <- FALSE
     }
 
     # Check win/lose conditions
     state <- check_conditions(state)
   }
+
+  # Update meta progression
+  meta <- update_meta_progression(meta, state)
+  save_meta_progression(meta)
 
   # Game over
   cat("\033[2J\033[H")  # Clear screen
@@ -80,7 +105,18 @@ main <- function() {
   cat(sprintf("\nLevel reached: %d\n", state$level))
   cat(sprintf("Enemies slain: %d\n", state$stats$kills))
   cat(sprintf("Gold collected: %d\n", state$player$gold))
+
+  # Show newly unlocked bonuses
+  if (!is.null(meta$newly_unlocked) && length(meta$newly_unlocked) > 0) {
+    cat("\n*** NEW UNLOCKS ***\n")
+    for (unlock in meta$newly_unlocked) {
+      cat(sprintf("  - %s\n", unlock))
+    }
+  }
+
   cat("\nThanks for playing!\n")
+  cat("Press ENTER to exit...")
+  readline()
 }
 
 # Run the game
