@@ -11,7 +11,7 @@ render_game <- function(state) {
   cat("=== ROGUE - Level", state$level, "===\n\n")
 
   # Calculate visible area (field of view)
-  view_range <- 10
+  view_range <- 80
   player_x <- state$player$x
   player_y <- state$player$y
 
