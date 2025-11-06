@@ -106,22 +106,12 @@ src/
 
 ## Extension Possibilities
 
-### Easy Wins
-- [ ] More enemy types
-- [ ] More item variants
-- [ ] Sound effects (via `system("afplay")` on Mac)
-- [ ] Highscore persistence
-
 ### Medium Challenges
 - [ ] Field-of-View (FOV) algorithm
-- [ ] Hunger system
-- [ ] Magic/Spell system
 - [ ] Boss fights
 
 ### Hard Mode
 - [ ] Shiny-based GUI
-- [ ] Multiplayer (async)
-- [ ] Save/Load system
 - [ ] Meta-progression (unlocks between runs)
 
 ## Performance
