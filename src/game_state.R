@@ -353,20 +353,39 @@ pickup_item <- function(state, item) {
   if (item$effect == "heal") {
     state$player$hp <- min(state$player$max_hp, state$player$hp + item$value)
     state <- add_message(state, sprintf("You drink a %s. (+%d HP)", item$name, item$value))
+    state$stats$items_collected <- state$stats$items_collected + 1
   } else if (item$effect == "gold") {
     state$player$gold <- state$player$gold + item$value
     state <- add_message(state, sprintf("You collect %d gold!", item$value))
+    state$stats$items_collected <- state$stats$items_collected + 1
   } else if (item$effect == "weapon") {
-    old_weapon <- state$player$weapon$name
-    state$player$weapon <- list(name = item$name, damage = item$value)
-    state <- add_message(state, sprintf("You equip %s. (was: %s)", item$name, old_weapon))
+    # Only equip if better
+    if (item$value > state$player$weapon$damage) {
+      old_weapon <- state$player$weapon$name
+      old_damage <- state$player$weapon$damage
+      state$player$weapon <- list(name = item$name, damage = item$value)
+      state <- add_message(state, sprintf("You equip %s (+%d DMG, was: %s +%d)!",
+                                          item$name, item$value, old_weapon, old_damage))
+      state$stats$items_collected <- state$stats$items_collected + 1
+    } else {
+      state <- add_message(state, sprintf("You ignore %s (worse than %s)",
+                                          item$name, state$player$weapon$name))
+    }
   } else if (item$effect == "armor") {
-    old_armor <- state$player$armor$name
-    state$player$armor <- list(name = item$name, defense = item$value)
-    state <- add_message(state, sprintf("You equip %s. (was: %s)", item$name, old_armor))
+    # Only equip if better
+    if (item$value > state$player$armor$defense) {
+      old_armor <- state$player$armor$name
+      old_defense <- state$player$armor$defense
+      state$player$armor <- list(name = item$name, defense = item$value)
+      state <- add_message(state, sprintf("You equip %s (+%d DEF, was: %s +%d)!",
+                                          item$name, item$value, old_armor, old_defense))
+      state$stats$items_collected <- state$stats$items_collected + 1
+    } else {
+      state <- add_message(state, sprintf("You ignore %s (worse than %s)",
+                                          item$name, state$player$armor$name))
+    }
   }
 
-  state$stats$items_collected <- state$stats$items_collected + 1
   return(state)
 }
 

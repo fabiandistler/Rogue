@@ -21,9 +21,12 @@ A fully-featured procedurally generated dungeon crawler with meta-progression, a
 - **Skill Tree**: Earn skill points and unlock new abilities
 - **Dungeon Themes**: Experience 6 unique dungeon environments (Crypt, Volcano, Ice Cave, Forest, Dungeon, Temple)
 - **Meta-Progression**: Persistent unlocks and bonuses that carry between runs
-- **Loot System**: Collect gold, weapons, armor, and potions
+- **Smart Loot System**: Collect gold, weapons, armor, and potions
+  - Automatic stat comparison - only equips items if they're better than current gear
+  - Clear feedback showing stat improvements
+  - No need to manually check equipment stats!
 - **Enemy AI**: Enemies chase you or move randomly
-- **Item Management**: Equip better gear
+- **Item Management**: Equipment is auto-managed intelligently
 - **Progressive Difficulty**: More enemies in deeper levels
 
 ### Technical Features
@@ -83,10 +86,14 @@ The GUI version features:
 - `s` - Move down
 - `a` - Move left
 - `d` - Move right
+- **`5w`** - Move 5 steps up (multi-step movement - works with any number!)
+- **`10d`** - Move 10 steps right (automatically stops at enemies)
 - `i` - Show inventory
 - `k` - Open abilities menu
 - `m` - View meta-progression stats
 - `q` - Quit game
+
+**Pro tip**: Use multi-step movement like `10w` or `5d` to quickly traverse empty corridors!
 
 ### Objective
 - Reach level 10 to win
@@ -237,6 +244,9 @@ Inspired by classic roguelikes such as:
 
 ## Pro Tips
 
+- **Multi-Step Movement**: Use commands like `10w` or `5d` to quickly move through empty areas
+- **Smart Auto-Equip**: The game automatically compares stats - no need to manually check if items are better!
+- **Fast Travel Safety**: Multi-step movement stops automatically when enemies are nearby - safe to use!
 - **Unlock Synergies**: Combine Warrior Start + Weapon Master for a powerful early game
 - **Save Abilities**: Use abilities strategically - they're most valuable in boss fights
 - **Explore Thoroughly**: More exploration = more loot and experience
