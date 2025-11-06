@@ -12,7 +12,9 @@ A procedurally generated dungeon crawler completely implemented in R!
 
 ### Gameplay Features
 - **Dungeon Exploration**: Explore procedurally generated rooms and corridors
+- **Field of View**: Only see what's in your line of sight - unexplored areas remain dark
 - **Combat System**: Fight against Goblins, Orcs, and Trolls
+- **Boss Fights**: Face powerful bosses every 3 levels with guaranteed legendary loot
 - **Loot System**: Collect gold, weapons, armor, and potions
 - **Enemy AI**: Enemies chase you or move randomly
 - **Item Management**: Equip better gear
@@ -67,6 +69,10 @@ R
 - `g` - Goblin (20 HP, 5 ATK)
 - `o` - Orc (40 HP, 8 ATK)
 - `T` - Troll (60 HP, 12 ATK)
+- `G` - Goblin King (Boss - 100 HP, 15 ATK)
+- `O` - Orc Chieftain (Boss - 150 HP, 20 ATK)
+- `W` - Troll Warlord (Boss - 200 HP, 25 ATK)
+- `D` - Ancient Dragon (Boss - 300 HP, 35 ATK)
 - `!` - Health Potion (+30 HP)
 - `$` - Gold
 - `/` - Weapon
@@ -75,15 +81,18 @@ R
 - `#` - Wall
 - `.` - Floor
 
+**Note**: Bosses appear in magenta color and drop legendary weapons and armor!
+
 ## Architecture
 
 ```
 rogue.R           # Main entry point & game loop
 src/
-  ├── game_state.R   # State management, player, items
+  ├── game_state.R   # State management, player, items, bosses
   ├── dungeon_gen.R  # BSP-based procedural generation
-  ├── combat.R       # Combat system & enemy AI
-  ├── renderer.R     # Terminal rendering with colors
+  ├── fov.R          # Field of View (FOV) calculation
+  ├── combat.R       # Combat system, enemy AI, boss loot
+  ├── renderer.R     # Terminal rendering with colors and FOV
   └── input.R        # Input handling
 ```
 
@@ -94,10 +103,17 @@ src/
 - Recursive container splits for organic levels
 - L-shaped corridors connect all rooms
 
+**Field of View**:
+- Raycasting algorithm reveals only visible tiles
+- Explored areas remain dimly visible
+- Unexplored areas are completely dark
+- 7-tile vision radius for atmospheric exploration
+
 **Combat System**:
 - Damage = ATK + Weapon - Enemy Defense ± Random(2)
 - Enemy AI: Chase player if distance ≤ 8, otherwise random movement
 - 30% chance for item drop on enemy death
+- Boss fights every 3 levels with guaranteed legendary loot
 
 **State Management**:
 - All game state in nested lists
@@ -106,13 +122,15 @@ src/
 
 ## Extension Possibilities
 
-### Medium Challenges
-- [ ] Field-of-View (FOV) algorithm
-- [ ] Boss fights
+### Completed Features
+- [x] Field-of-View (FOV) algorithm
+- [x] Boss fights
 
-### Hard Mode
+### Future Enhancements
 - [ ] Shiny-based GUI
 - [ ] Meta-progression (unlocks between runs)
+- [ ] Special abilities and skill trees
+- [ ] More dungeon themes and environments
 
 ## Performance
 

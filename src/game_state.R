@@ -30,7 +30,7 @@ init_game_state <- function(seed = NULL) {
   )
 
   # Spawn enemies
-  enemies <- spawn_enemies(dungeon, start_pos, count = 5)
+  enemies <- spawn_enemies(dungeon, start_pos, count = 5, level = 1)
 
   # Spawn items
   items <- spawn_items(dungeon, start_pos, count = 3)
@@ -53,25 +53,74 @@ init_game_state <- function(seed = NULL) {
       damage_dealt = 0,
       damage_taken = 0
     ),
-    seed = seed
+    seed = seed,
+    fov = init_fov_state(dungeon$map)
   )
+
+  # Calculate initial FOV
+  state <- calculate_fov(state)
 
   add_message(state, "Welcome to the dungeon!")
   return(state)
 }
 
 # Spawn enemies in random positions
-spawn_enemies <- function(dungeon, start_pos, count = 5) {
+spawn_enemies <- function(dungeon, start_pos, count = 5, level = 1) {
   enemies <- list()
   map <- dungeon$map
 
   enemy_types <- list(
-    list(name = "Goblin", hp = 20, attack = 5, defense = 2, xp = 10, char = "g"),
-    list(name = "Orc", hp = 40, attack = 8, defense = 4, xp = 20, char = "o"),
-    list(name = "Troll", hp = 60, attack = 12, defense = 6, xp = 30, char = "T")
+    list(name = "Goblin", hp = 20, attack = 5, defense = 2, xp = 10, char = "g", is_boss = FALSE),
+    list(name = "Orc", hp = 40, attack = 8, defense = 4, xp = 20, char = "o", is_boss = FALSE),
+    list(name = "Troll", hp = 60, attack = 12, defense = 6, xp = 30, char = "T", is_boss = FALSE)
   )
 
-  for (i in 1:count) {
+  # Boss types
+  boss_types <- list(
+    list(name = "Goblin King", hp = 100, attack = 15, defense = 8, xp = 100, char = "G", is_boss = TRUE),
+    list(name = "Orc Chieftain", hp = 150, attack = 20, defense = 12, xp = 150, char = "O", is_boss = TRUE),
+    list(name = "Troll Warlord", hp = 200, attack = 25, defense = 15, xp = 200, char = "W", is_boss = TRUE),
+    list(name = "Ancient Dragon", hp = 300, attack = 35, defense = 20, xp = 300, char = "D", is_boss = TRUE)
+  )
+
+  # Check if this is a boss level (every 3 levels)
+  is_boss_level <- (level %% 3 == 0)
+
+  if (is_boss_level) {
+    # Spawn a boss
+    boss_idx <- min(ceiling(level / 3), length(boss_types))
+    boss_type <- boss_types[[boss_idx]]
+
+    # Find position for boss (far from start)
+    repeat {
+      x <- sample(2:(ncol(map) - 1), 1)
+      y <- sample(2:(nrow(map) - 1), 1)
+
+      if (map[y, x] == "." &&
+          abs(x - start_pos$x) + abs(y - start_pos$y) > 10) {
+        break
+      }
+    }
+
+    enemies[[1]] <- c(
+      boss_type,
+      list(
+        x = x,
+        y = y,
+        id = 1,
+        alive = TRUE
+      )
+    )
+
+    # Reduce regular enemy count on boss levels
+    count <- ceiling(count * 0.6)
+    start_idx <- 2
+  } else {
+    start_idx <- 1
+  }
+
+  # Spawn regular enemies
+  for (i in start_idx:(start_idx + count - 1)) {
     # Find random walkable position
     repeat {
       x <- sample(2:(ncol(map) - 1), 1)
@@ -181,6 +230,9 @@ process_action <- function(state, action) {
         state$player$y <- new_pos$y
         state$player_acted <- TRUE
 
+        # Recalculate FOV after movement
+        state <- calculate_fov(state)
+
         # Check for item pickup
         item <- get_item_at(state, new_pos$x, new_pos$y)
         if (!is.null(item)) {
@@ -269,7 +321,14 @@ pickup_item <- function(state, item) {
 # Descend stairs
 descend_stairs <- function(state) {
   state$level <- state$level + 1
-  state <- add_message(state, sprintf("You descend to level %d!", state$level))
+
+  # Check if this is a boss level
+  if (state$level %% 3 == 0) {
+    state <- add_message(state, sprintf("*** BOSS LEVEL %d ***", state$level))
+    state <- add_message(state, "You sense a powerful presence...")
+  } else {
+    state <- add_message(state, sprintf("You descend to level %d!", state$level))
+  }
 
   # Generate new dungeon
   dungeon <- generate_dungeon(width = 40, height = 20, difficulty = state$level)
@@ -281,12 +340,16 @@ descend_stairs <- function(state) {
   state$player$x <- dungeon$start_pos$x
   state$player$y <- dungeon$start_pos$y
 
+  # Reinitialize FOV for new level
+  state$fov <- init_fov_state(dungeon$map)
+  state <- calculate_fov(state)
+
   # Heal player slightly
   state$player$hp <- min(state$player$max_hp, state$player$hp + 20)
 
   # Spawn more enemies
   enemy_count <- 5 + state$level
-  state$enemies <- spawn_enemies(dungeon, dungeon$start_pos, count = enemy_count)
+  state$enemies <- spawn_enemies(dungeon, dungeon$start_pos, count = enemy_count, level = state$level)
 
   # Spawn more items
   item_count <- 3 + floor(state$level / 2)
