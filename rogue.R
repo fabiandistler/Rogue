@@ -74,18 +74,50 @@ main <- function() {
     # Get player input
     action <- get_input()
 
-    # Process action
-    state <- process_action(state, action)
+    # Handle multi-move commands
+    if (is.list(action) && !is.null(action$type) && action$type == "multi_move") {
+      # Execute multiple moves
+      for (i in 1:action$count) {
+        # Process single move
+        state <- process_action(state, action$direction)
 
-    # Process enemies turn
-    if (state$player_acted) {
-      state <- process_enemies(state)
-      state <- update_cooldowns(state)
-      state$player_acted <- FALSE
+        # Process enemies turn
+        if (state$player_acted) {
+          state <- process_enemies(state)
+          state <- update_cooldowns(state)
+          state$player_acted <- FALSE
+        }
+
+        # Check win/lose conditions
+        state <- check_conditions(state)
+
+        # Stop if game ended or combat occurred
+        if (!state$running || any(sapply(state$enemies, function(e) {
+          e$alive && abs(e$x - state$player$x) + abs(e$y - state$player$y) <= 1
+        }))) {
+          break
+        }
+
+        # Brief render update for visual feedback
+        if (i < action$count) {
+          render_game(state)
+          Sys.sleep(0.1)  # Small delay for visual feedback
+        }
+      }
+    } else {
+      # Process single action
+      state <- process_action(state, action)
+
+      # Process enemies turn
+      if (state$player_acted) {
+        state <- process_enemies(state)
+        state <- update_cooldowns(state)
+        state$player_acted <- FALSE
+      }
+
+      # Check win/lose conditions
+      state <- check_conditions(state)
     }
-
-    # Check win/lose conditions
-    state <- check_conditions(state)
   }
 
   # Update meta progression
