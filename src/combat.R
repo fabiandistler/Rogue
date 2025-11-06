@@ -9,6 +9,18 @@ player_attack <- function(state, enemy) {
   damage <- max(1, state$player$attack + state$player$weapon$damage - enemy$defense)
   damage <- damage + sample(-2:2, 1)  # Random variance
 
+  # Apply power strike bonus
+  if (!is.null(state$abilities$power_strike_active) && state$abilities$power_strike_active) {
+    damage <- damage * 2
+    state$abilities$power_strike_active <- FALSE
+    state <- add_message(state, "POWER STRIKE!")
+  }
+
+  # Apply boss slayer bonus
+  if (!is.null(state$meta) && "boss_slayer" %in% state$meta$active_bonuses && enemy$is_boss) {
+    damage <- ceiling(damage * 1.2)
+  }
+
   # Find enemy index
   enemy_idx <- which(sapply(state$enemies, function(e) e$id == enemy$id))
 
@@ -32,11 +44,22 @@ player_attack <- function(state, enemy) {
       state <- add_message(state, sprintf("You killed %s!", enemy$name))
     }
 
-    # Drop gold (more for bosses)
+    # Drop gold (more for bosses, and treasure hunter bonus)
     gold_multiplier <- ifelse(enemy$is_boss, 5, 1)
-    gold_drop <- sample(5:15, 1) * state$level * gold_multiplier
+
+    # Apply treasure hunter bonus
+    if (!is.null(state$meta) && "treasure_hunter" %in% state$meta$active_bonuses) {
+      gold_multiplier <- gold_multiplier * 1.5
+    }
+
+    gold_drop <- ceiling(sample(5:15, 1) * state$level * gold_multiplier)
     state$player$gold <- state$player$gold + gold_drop
     state <- add_message(state, sprintf("You gained %d gold!", gold_drop))
+
+    # Gain skill point from bosses
+    if (enemy$is_boss) {
+      state <- gain_skill_point(state)
+    }
 
     # Drop items
     if (enemy$is_boss) {
@@ -58,6 +81,12 @@ enemy_attack <- function(state, enemy) {
   # Calculate damage
   damage <- max(1, enemy$attack - state$player$defense - state$player$armor$defense)
   damage <- damage + sample(-1:1, 1)  # Random variance
+
+  # Apply shield wall reduction
+  if (!is.null(state$abilities$abilities$shield_wall$active) && state$abilities$abilities$shield_wall$active) {
+    damage <- ceiling(damage * 0.5)
+    state <- add_message(state, "Shield Wall blocks damage!")
+  }
 
   # Apply damage to player
   state$player$hp <- state$player$hp - damage

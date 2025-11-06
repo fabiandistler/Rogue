@@ -17,6 +17,10 @@ get_input <- function() {
     return("quit")
   } else if (input == "i") {
     return("inventory")
+  } else if (input == "k") {
+    return("abilities")
+  } else if (input == "m") {
+    return("meta")
   } else {
     return("invalid")
   }
