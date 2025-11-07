@@ -1,8 +1,8 @@
 # ROGUE - A Rogue-lite Game in Pure R
 
-A fully-featured procedurally generated dungeon crawler with meta-progression, abilities, and multiple interfaces - all implemented in R!
+A fully-featured procedurally generated dungeon crawler with meta-progression, abilities, and terminal-native experience - all implemented in R!
 
-**Now with Shiny GUI support!** 🎮
+**Pure CLI Excellence!** 🎮
 
 ## Features
 
@@ -30,9 +30,9 @@ A fully-featured procedurally generated dungeon crawler with meta-progression, a
 - **Progressive Difficulty**: More enemies in deeper levels
 
 ### Technical Features
-- **Dual Interface**: Terminal-based AND Shiny web GUI
-- **Pure R Core**: No external dependencies except base R (Shiny optional for GUI)
-- **Terminal-based**: Runs in any terminal with ANSI color support
+- **Pure R**: No external dependencies - just base R
+- **Terminal-Native**: Designed for CLI from the ground up
+- **ANSI Colors**: Beautiful terminal rendering with color support
 - **Seed-based**: Reproducible runs possible
 - **Modular Architecture**: Cleanly separated components
 - **Persistent Save System**: Meta-progression saved between runs
@@ -44,14 +44,12 @@ A fully-featured procedurally generated dungeon crawler with meta-progression, a
 git clone https://github.com/yourusername/Rogue.git
 cd Rogue
 
-# For terminal version: No dependencies needed - pure R!
-# For Shiny GUI: Install Shiny
-R -e "install.packages('shiny')"
+# No dependencies needed - pure R!
+# Just run the game in an interactive R session
 ```
 
 ## How to Play
 
-### Terminal Version (Recommended for Purists)
 ```bash
 # In R console
 R
@@ -64,24 +62,7 @@ R
 
 **Note**: Rscript mode is not supported due to `readline()` limitations. Use interactive R session.
 
-### Shiny GUI Version (Recommended for Beginners)
-```bash
-# In R console
-R
-> shiny::runApp("shiny_app.R")
-
-# Or in RStudio
-# Open shiny_app.R and click "Run App"
-```
-
-The GUI version features:
-- Visual dungeon map with color-coded entities
-- Click-able movement buttons
-- Ability buttons with cooldown indicators
-- Real-time stats display
-- Enemy list showing visible threats
-
-### Controls (Terminal Version)
+### Controls
 - `w` - Move up
 - `s` - Move down
 - `a` - Move left
@@ -124,7 +105,6 @@ The GUI version features:
 
 ```
 rogue.R              # Main entry point & terminal game loop
-shiny_app.R          # Shiny GUI interface
 src/
   ├── game_state.R         # State management, player, items, bosses
   ├── dungeon_gen.R        # BSP-based procedural generation
@@ -195,19 +175,20 @@ src/
 ### ✅ Completed Features
 - [x] Field-of-View (FOV) algorithm with raycasting
 - [x] Boss fights with themed bosses
-- [x] Shiny-based GUI with visual interface
 - [x] Meta-progression with 7 unlockable bonuses
 - [x] Special abilities and skill tree (5 abilities)
 - [x] Multiple dungeon themes (6 unique environments)
+- [x] Pure R implementation with zero dependencies
 
 ### 🚀 Future Enhancements
+See `FEATURE_MAP_v1.0.md` for detailed roadmap:
+- [ ] Modern CLI packages (cli, crayon, keypress)
+- [ ] Enhanced terminal UX with delta-rendering
+- [ ] Achievement system and leaderboards
 - [ ] More ability types and passive skills
-- [ ] Multiplayer co-op mode
-- [ ] Achievement system
-- [ ] Sound effects and music
-- [ ] More boss variety
 - [ ] Character classes with different starting stats
 - [ ] Equipment enchantments and upgrades
+- [ ] Advanced procedural generation (special rooms, traps)
 
 ## Performance
 
@@ -218,9 +199,8 @@ src/
 
 ## Built With
 
-- **R** - The only programming language you need
-- **Shiny** - For the web-based GUI (optional)
-- **ANSI Escape Codes** - For terminal colors
+- **Pure R** - The only programming language you need
+- **ANSI Escape Codes** - For beautiful terminal colors
 - **Algorithms**:
   - BSP (Binary Space Partitioning) for dungeons
   - Raycasting for field of view
@@ -253,15 +233,11 @@ Inspired by classic roguelikes such as:
 - **Meta Grinding**: Focus on unlocking Treasure Hunter early for faster progression
 - **Boss Strategy**: Use Shield Wall when fighting bosses to survive longer
 - **Reproducible Runs**: Use `set.seed()` in `init_game_state()` for challenge runs
-- **GUI vs Terminal**: GUI is easier for beginners, terminal is faster for experienced players
+- **Terminal Excellence**: Pure CLI experience optimized for keyboard warriors
 
 ## Screenshots
 
-### Terminal Version
-Classic roguelike experience with ANSI colors and atmospheric FOV lighting.
-
-### Shiny GUI Version
-Modern web interface with click-able controls, visual dungeon map, and real-time stats.
+Classic roguelike experience with ANSI colors, atmospheric FOV lighting, and pure terminal excellence.
 
 ---
 
