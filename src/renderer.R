@@ -102,6 +102,9 @@ render_game <- function(state) {
   for (msg in state$message_log) {
     cat(msg, "\n")
   }
+
+  # Render keybindings help bar
+  render_keybindings()
 }
 
 render_ui <- function(state) {
@@ -157,4 +160,21 @@ create_bar <- function(current, maximum, length = 20, label = "") {
   )
 
   return(bar)
+}
+
+# Render keybindings help bar at bottom of screen
+render_keybindings <- function() {
+  cat("\n")
+  cat("\033[1;36m═══════════════════════════════════════════════════════════════════════════════\033[0m\n")
+  cat("\033[1;36mKEYS:\033[0m ")
+  cat("\033[1;33mw/a/s/d\033[0m=Move  ")
+  cat("\033[1;33mo\033[0m=Auto-explore  ")
+  cat("\033[1;33me\033[0m=Interact  ")
+  cat("\033[1;33mf\033[0m=Search  ")
+  cat("\033[1;33m1-5\033[0m=Abilities  ")
+  cat("\033[1;33mi\033[0m=Inventory  ")
+  cat("\033[1;33mm\033[0m=Minimap  ")
+  cat("\033[1;33m?\033[0m=Help  ")
+  cat("\033[1;33mq\033[0m=Quit\n")
+  cat("\033[1;36m═══════════════════════════════════════════════════════════════════════════════\033[0m\n")
 }

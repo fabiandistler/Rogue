@@ -198,8 +198,8 @@ is_walkable <- function(state, x, y) {
     return(FALSE)
   }
 
-  # Check if floor
-  if (state$map[y, x] != ".") {
+  # Check if floor or stairs
+  if (state$map[y, x] != "." && state$map[y, x] != ">") {
     return(FALSE)
   }
 
@@ -215,8 +215,7 @@ is_walkable <- function(state, x, y) {
 
 update_game_state_after_move <- function(state) {
   # Update FOV
-  state$fov <- calculate_fov(state$map, state$player$x, state$player$y,
-                             state$fov$explored, state$meta$unlocks)
+  state <- calculate_fov(state)
 
   # Process enemies (they get a turn)
   state <- process_enemies(state)
@@ -230,7 +229,7 @@ update_game_state_after_move <- function(state) {
   item <- get_item_at(state, state$player$x, state$player$y)
   if (!is.null(item) && !item$picked) {
     # Auto-pickup items during exploration
-    state <- pickup_item(state, item$id)
+    state <- pickup_item(state, item)
   }
 
   return(state)
