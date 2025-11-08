@@ -103,6 +103,9 @@ render_game <- function(state, previous_state = NULL) {
   if (!is.null(state$particles) && length(state$particles) > 0) {
     render_particles(state$particles)
   }
+
+  # Render keybindings help bar
+  render_keybindings()
 }
 
 # ============================================================================
@@ -382,4 +385,24 @@ get_special_room_at <- function(state, x, y) {
     }
   }
   return(NULL)
+}
+
+# ============================================================================
+# Keybindings Help Bar
+# ============================================================================
+
+render_keybindings <- function() {
+  cat("\n")
+  cat(color_text("═══════════════════════════════════════════════════════════════════════════════\n", "cyan"))
+  cat(color_text("KEYS: ", "cyan"))
+  cat(color_text("w/a/s/d", "yellow"), "=Move  ")
+  cat(color_text("o", "yellow"), "=Auto-explore  ")
+  cat(color_text("e", "yellow"), "=Interact  ")
+  cat(color_text("f", "yellow"), "=Search  ")
+  cat(color_text("1-5", "yellow"), "=Abilities  ")
+  cat(color_text("i", "yellow"), "=Inventory  ")
+  cat(color_text("m", "yellow"), "=Minimap  ")
+  cat(color_text("?", "yellow"), "=Help  ")
+  cat(color_text("q", "yellow"), "=Quit\n")
+  cat(color_text("═══════════════════════════════════════════════════════════════════════════════\n", "cyan"))
 }
