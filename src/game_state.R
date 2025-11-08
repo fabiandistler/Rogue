@@ -69,6 +69,11 @@ init_game_state <- function(seed = NULL, meta = NULL) {
     }
   }
 
+  # Initialize new systems (if available)
+  traps <- if (exists("generate_traps")) generate_traps(list(map = dungeon$map, level = 1, rooms = dungeon$rooms, player = list(x = start_pos$x, y = start_pos$y), stairs_pos = dungeon$stairs_pos, enemies = enemies, items = items)) else list()
+  special_rooms <- if (exists("generate_special_rooms")) generate_special_rooms(list(level = 1, rooms = dungeon$rooms)) else list()
+  achievements <- if (exists("init_achievements")) init_achievements() else list()
+
   # Create state
   state <- list(
     player = player,
@@ -85,14 +90,32 @@ init_game_state <- function(seed = NULL, meta = NULL) {
       kills = 0,
       items_collected = 0,
       damage_dealt = 0,
-      damage_taken = 0
+      damage_taken = 0,
+      turns = 0,
+      max_level_reached = 1,
+      legendary_items_found = 0,
+      legendaries_this_run = 0,
+      abilities_used = 0
     ),
     seed = seed,
     fov = init_fov_state(dungeon$map),
     theme = theme,
     abilities = init_abilities(),
-    meta = meta
+    meta = meta,
+    # New systems
+    traps = traps,
+    special_rooms = special_rooms,
+    achievements = achievements,
+    ui = list(
+      minimap_enabled = FALSE,
+      show_particles = TRUE
+    ),
+    particles = list()
   )
+
+  # Initialize player status effects
+  state$player$status_effects <- if (exists("init_status_effects")) init_status_effects() else list()
+  state$player$potions <- list()
 
   # Calculate initial FOV
   state <- calculate_fov(state)
@@ -263,6 +286,97 @@ process_action <- function(state, action) {
     return(state)
   }
 
+  # Auto-explore
+  if (action == "auto_explore" || action == "o") {
+    if (exists("auto_explore")) {
+      state <- auto_explore(state)
+      state$player_acted <- TRUE
+    } else {
+      state <- add_message(state, "Auto-explore not available.")
+    }
+    return(state)
+  }
+
+  # Toggle minimap
+  if (action == "minimap" || action == "m") {
+    if (exists("toggle_minimap")) {
+      state <- toggle_minimap(state)
+    } else {
+      state <- add_message(state, "Minimap not available.")
+    }
+    return(state)
+  }
+
+  # Search for traps
+  if (action == "search" || action == "f") {
+    if (exists("search_for_traps")) {
+      state <- search_for_traps(state)
+      state$player_acted <- TRUE
+    } else {
+      state <- add_message(state, "Search not available.")
+    }
+    return(state)
+  }
+
+  # View achievements
+  if (action == "achievements" || action == "v") {
+    if (exists("display_achievements")) {
+      cat("\033[2J\033[H")
+      display_achievements(state)
+      cat("\nPress ENTER to continue...")
+      readline()
+    } else {
+      state <- add_message(state, "Achievements not available.")
+    }
+    return(state)
+  }
+
+  # View leaderboard
+  if (action == "leaderboard" || action == "b") {
+    if (exists("display_leaderboard")) {
+      cat("\033[2J\033[H")
+      display_leaderboard()
+      cat("\nPress ENTER to continue...")
+      readline()
+    } else {
+      state <- add_message(state, "Leaderboard not available.")
+    }
+    return(state)
+  }
+
+  # Show help
+  if (action == "help" || action == "?") {
+    cat("\033[2J\033[H")
+    show_help()
+    cat("\nPress ENTER to continue...")
+    readline()
+    return(state)
+  }
+
+  # Interact with special room
+  if (action == "interact" || action == "e") {
+    if (!is.null(state$special_rooms)) {
+      for (i in seq_along(state$special_rooms)) {
+        room <- state$special_rooms[[i]]
+        if (room$x == state$player$x && room$y == state$player$y && !room$visited) {
+          # Interact with room
+          interact_func <- paste0("interact_", room$type)
+          if (exists(interact_func)) {
+            state <- do.call(interact_func, list(state, room))
+            state$special_rooms[[i]]$visited <- TRUE
+          } else {
+            state <- add_message(state, sprintf("You explore the %s.", room$name))
+            state$special_rooms[[i]]$visited <- TRUE
+          }
+          state$player_acted <- TRUE
+          return(state)
+        }
+      }
+      state <- add_message(state, "Nothing to interact with here.")
+    }
+    return(state)
+  }
+
   # Handle movement
   if (action %in% c("w", "a", "s", "d")) {
     new_pos <- calculate_new_position(state$player, action)
@@ -284,6 +398,25 @@ process_action <- function(state, action) {
 
         # Recalculate FOV after movement
         state <- calculate_fov(state)
+
+        # Check for traps
+        if (exists("get_trap_at") && !is.null(state$traps)) {
+          trap_result <- get_trap_at(state, new_pos$x, new_pos$y)
+          if (!is.null(trap_result)) {
+            state <- trigger_trap(state, trap_result$index)
+          }
+        }
+
+        # Check for special rooms
+        if (exists("get_special_room_at") && !is.null(state$special_rooms)) {
+          for (i in seq_along(state$special_rooms)) {
+            room <- state$special_rooms[[i]]
+            if (room$x == new_pos$x && room$y == new_pos$y && !room$visited) {
+              state$message_log <- c(state$message_log,
+                                    sprintf("You found a %s! Press 'e' to interact.", room$name))
+            }
+          }
+        }
 
         # Check for item pickup
         item <- get_item_at(state, new_pos$x, new_pos$y)
@@ -441,6 +574,20 @@ descend_stairs <- function(state) {
   item_count <- 3 + floor(state$level / 2)
   state$items <- spawn_items(dungeon, dungeon$start_pos, count = item_count)
 
+  # Generate new traps and special rooms
+  if (exists("generate_traps")) {
+    state$traps <- generate_traps(state)
+  }
+
+  if (exists("generate_special_rooms")) {
+    state$special_rooms <- generate_special_rooms(state)
+  }
+
+  # Update max level reached
+  if (state$level > state$stats$max_level_reached) {
+    state$stats$max_level_reached <- state$level
+  }
+
   return(state)
 }
 
@@ -466,4 +613,47 @@ check_conditions <- function(state) {
   }
 
   return(state)
+}
+
+# Show help screen
+show_help <- function() {
+  cat("═══════════════════════════════════════════════════════\n")
+  cat("                    ROGUE - HELP\n")
+  cat("═══════════════════════════════════════════════════════\n\n")
+
+  cat("MOVEMENT:\n")
+  cat("  w/a/s/d - Move up/left/down/right\n")
+  cat("  5w, 10d - Multi-step movement (stops at enemies)\n\n")
+
+  cat("ACTIONS:\n")
+  cat("  e - Interact with special rooms/items\n")
+  cat("  f - Search for nearby traps\n")
+  cat("  o - Auto-explore (finds unexplored areas)\n")
+  cat("  1-5 - Use abilities\n\n")
+
+  cat("MENUS:\n")
+  cat("  i - Inventory\n")
+  cat("  k - Abilities menu\n")
+  cat("  m - Toggle minimap\n")
+  cat("  p - Meta-progression stats\n")
+  cat("  v - View achievements\n")
+  cat("  b - View leaderboard\n")
+  cat("  ? - This help screen\n")
+  cat("  q - Quit game\n\n")
+
+  cat("OBJECTIVES:\n")
+  cat("  - Reach level 10 to win\n")
+  cat("  - Defeat bosses every 3 levels\n")
+  cat("  - Collect loot and upgrade equipment\n")
+  cat("  - Complete achievements for soul rewards\n\n")
+
+  cat("SPECIAL FEATURES:\n")
+  cat("  - Status Effects: Poison, Burn, Freeze, etc.\n")
+  cat("  - Item Rarities: Common, Uncommon, Rare, Legendary\n")
+  cat("  - Special Rooms: Shop, Shrine, Treasure, Challenge\n")
+  cat("  - Traps: Search and disarm to avoid damage\n")
+  cat("  - Achievements: 25+ unique achievements\n")
+  cat("  - Leaderboard: Compete for high scores\n\n")
+
+  cat("═══════════════════════════════════════════════════════\n")
 }

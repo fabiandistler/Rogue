@@ -188,11 +188,10 @@ You gained 15 gold!
 - [ ] Leaderboard (SQLite)
 
 ### Phase 4 - Advanced
-- [ ] Shiny-based GUI
 - [ ] Multiplayer (async, shared leaderboard)
-- [ ] Boss fights
+- [ ] More boss variety and patterns
 - [ ] Special themed levels
-- [ ] Music/Sound (system() calls)
+- [ ] ASCII sound effects and notifications
 
 ### Phase 5 - Polish
 - [ ] Better AI (A* pathfinding)
