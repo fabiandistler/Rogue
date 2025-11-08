@@ -11,6 +11,8 @@
 
 **ROGUE** is a fully-featured procedurally generated dungeon crawler that proves R can create deep, engaging games. With **50+ gameplay systems**, **6000+ lines of code**, and **8 character classes**, this is the most comprehensive CLI game ever built in R.
 
+✨ **NEW:** Real-time input support! No Enter key required with `keypress` package.
+
 **Core Features:**
 - ⚔️ **8 Character Classes** with unique abilities
 - 🎯 **Daily Challenges** with 10 modifiers & global leaderboard
@@ -34,8 +36,11 @@
 git clone https://github.com/fabiandistler/Rogue.git
 cd Rogue
 
-# Optional: Install enhanced packages
-R -e "install.packages(c('cli', 'crayon', 'jsonlite'))"
+# Install dependencies (optional but recommended)
+R -e "source('setup.R')"
+
+# OR manually install packages
+R -e "install.packages(c('cli', 'crayon', 'jsonlite', 'keypress'))"
 
 # Start game
 R
@@ -44,6 +49,11 @@ R
 ```
 
 **Requirements:** R >= 3.6.0, ANSI-capable terminal, interactive R session
+
+**Recommended:** Install `keypress` package for real-time input (no Enter key needed!)
+```r
+install.packages("keypress")
+```
 
 ---
 
@@ -192,9 +202,13 @@ Themes change every 2 levels, each with unique enemies and bosses:
 
 ## 🕹️ Controls
 
+**Real-time Input:** With `keypress` package installed, enjoy instant response - no Enter key needed!
+
 **Movement:** `w/a/s/d` | Multi-step: `5w`, `10d` | Auto-explore: `o`
 **Actions:** `e` interact | `f` search traps | `1-5` abilities
 **Menus:** `i` inventory | `m` minimap | `k` abilities | `?` help | `q` quit
+
+**Note:** Without keypress, game falls back to readline mode (press Enter after each command)
 
 ---
 
@@ -216,7 +230,12 @@ Themes change every 2 levels, each with unique enemies and bosses:
 
 **Architecture:** 22 modules, 6000+ lines, 200+ functions
 **Algorithms:** BSP dungeon gen, raycasting FOV, BFS pathfinding
-**Dependencies:** Zero! (optional: cli, crayon, jsonlite for enhanced UX)
+**Dependencies:** Zero! Runs on pure base R
+**Optional packages:**
+- `keypress` - Real-time input (NEW!)
+- `cli` - Enhanced terminal UI
+- `crayon` - Rich color support
+- `jsonlite` - Human-readable save files
 **Performance:** <50ms per frame
 
 ```
@@ -250,7 +269,7 @@ src/
 
 ## 🚀 Future Enhancements
 
-- [ ] Real-time input with `keypress` package
+- [x] **Real-time input with `keypress` package** ✨ NEW!
 - [ ] Animated transitions
 - [ ] Additional character classes
 - [ ] Multiplayer co-op mode
