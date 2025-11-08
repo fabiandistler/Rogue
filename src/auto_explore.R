@@ -198,8 +198,8 @@ is_walkable <- function(state, x, y) {
     return(FALSE)
   }
 
-  # Check if floor
-  if (state$map[y, x] != ".") {
+  # Check if floor or stairs
+  if (state$map[y, x] != "." && state$map[y, x] != ">") {
     return(FALSE)
   }
 
