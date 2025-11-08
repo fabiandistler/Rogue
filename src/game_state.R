@@ -381,53 +381,52 @@ process_action <- function(state, action) {
   if (action %in% c("w", "a", "s", "d")) {
     new_pos <- calculate_new_position(state$player, action)
 
-    # Check if valid move
-    if (is_walkable(state, new_pos$x, new_pos$y)) {
-      # Check for enemy collision
-      enemy <- get_enemy_at(state, new_pos$x, new_pos$y)
+    # Check for enemy FIRST (before walkability check)
+    # This ensures combat always works even if there are edge cases
+    enemy <- get_enemy_at(state, new_pos$x, new_pos$y)
 
-      if (!is.null(enemy)) {
-        # Attack enemy
-        state <- player_attack(state, enemy)
-        state$player_acted <- TRUE
-      } else {
-        # Move player
-        state$player$x <- new_pos$x
-        state$player$y <- new_pos$y
-        state$player_acted <- TRUE
+    if (!is.null(enemy)) {
+      # Attack enemy
+      state <- player_attack(state, enemy)
+      state$player_acted <- TRUE
+    } else if (is_walkable(state, new_pos$x, new_pos$y)) {
+      # No enemy, check if we can move
+      # Move player
+      state$player$x <- new_pos$x
+      state$player$y <- new_pos$y
+      state$player_acted <- TRUE
 
-        # Recalculate FOV after movement
-        state <- calculate_fov(state)
+      # Recalculate FOV after movement
+      state <- calculate_fov(state)
 
-        # Check for traps
-        if (exists("get_trap_at") && !is.null(state$traps)) {
-          trap_result <- get_trap_at(state, new_pos$x, new_pos$y)
-          if (!is.null(trap_result)) {
-            state <- trigger_trap(state, trap_result$index)
+      # Check for traps
+      if (exists("get_trap_at") && !is.null(state$traps)) {
+        trap_result <- get_trap_at(state, new_pos$x, new_pos$y)
+        if (!is.null(trap_result)) {
+          state <- trigger_trap(state, trap_result$index)
+        }
+      }
+
+      # Check for special rooms
+      if (exists("get_special_room_at") && !is.null(state$special_rooms)) {
+        for (i in seq_along(state$special_rooms)) {
+          room <- state$special_rooms[[i]]
+          if (room$x == new_pos$x && room$y == new_pos$y && !room$visited) {
+            state$message_log <- c(state$message_log,
+                                  sprintf("You found a %s! Press 'e' to interact.", room$name))
           }
         }
+      }
 
-        # Check for special rooms
-        if (exists("get_special_room_at") && !is.null(state$special_rooms)) {
-          for (i in seq_along(state$special_rooms)) {
-            room <- state$special_rooms[[i]]
-            if (room$x == new_pos$x && room$y == new_pos$y && !room$visited) {
-              state$message_log <- c(state$message_log,
-                                    sprintf("You found a %s! Press 'e' to interact.", room$name))
-            }
-          }
-        }
+      # Check for item pickup
+      item <- get_item_at(state, new_pos$x, new_pos$y)
+      if (!is.null(item)) {
+        state <- pickup_item(state, item)
+      }
 
-        # Check for item pickup
-        item <- get_item_at(state, new_pos$x, new_pos$y)
-        if (!is.null(item)) {
-          state <- pickup_item(state, item)
-        }
-
-        # Check for stairs
-        if (new_pos$x == state$stairs_pos$x && new_pos$y == state$stairs_pos$y) {
-          state <- descend_stairs(state)
-        }
+      # Check for stairs
+      if (new_pos$x == state$stairs_pos$x && new_pos$y == state$stairs_pos$y) {
+        state <- descend_stairs(state)
       }
     } else {
       state <- add_message(state, "You bump into a wall.")
