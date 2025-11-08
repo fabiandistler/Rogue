@@ -32,17 +32,23 @@
 ## 🚀 Quick Start
 
 ```bash
-# Clone and run
+# Clone repository
 git clone https://github.com/fabiandistler/Rogue.git
 cd Rogue
 
 # Install dependencies (optional but recommended)
-R -e "source('setup.R')"
+make setup
+# OR: R -e "source('setup.R')"
 
-# OR manually install packages
-R -e "install.packages(c('cli', 'crayon', 'jsonlite', 'keypress'))"
+# Start game - pick your favorite method:
 
-# Start game
+# Option 1: Simplest - using Makefile
+make play
+
+# Option 2: Using start script
+./start.sh
+
+# Option 3: Manual R console
 R
 > source("rogue.R")
 > main()
@@ -305,9 +311,12 @@ src/
 
 **Ready to descend?**
 
-```r
-source("rogue.R")
-main()
+```bash
+# Quick start:
+make play
+
+# Or:
+./start.sh
 ```
 
 **Every death makes you stronger. Good luck, adventurer!** 💀🎮
