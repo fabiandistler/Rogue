@@ -64,7 +64,7 @@ main <- function() {
     cat("MAIN MENU:\n\n")
     cat("  [1] Start New Run\n")
     cat("  [2] Daily Challenge\n")
-    cat("  [3] Souls Shop (%d souls)\n", meta$souls)
+    cat(sprintf("  [3] Souls Shop (%d souls)\n", meta$souls))
     cat("  [4] View Leaderboard\n")
     cat("  [5] View Achievements\n")
     cat("  [Q] Quit\n\n")
