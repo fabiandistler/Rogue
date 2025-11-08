@@ -22,14 +22,14 @@ init_game_state <- function(seed = NULL, meta = NULL) {
   player <- list(
     x = start_pos$x,
     y = start_pos$y,
-    hp = 100,
-    max_hp = 100,
-    attack = 10,
-    defense = 5,
-    gold = 0,
+    hp = 120,
+    max_hp = 120,
+    attack = 12,
+    defense = 6,
+    gold = 25,
     inventory = list(),
-    weapon = list(name = "Rusty Sword", damage = 5),
-    armor = list(name = "Cloth Armor", defense = 2)
+    weapon = list(name = "Iron Sword", damage = 8),
+    armor = list(name = "Leather Armor", defense = 4)
   )
 
   # Apply meta progression bonuses
@@ -42,8 +42,8 @@ init_game_state <- function(seed = NULL, meta = NULL) {
     }
   }
 
-  # Spawn enemies
-  enemies <- spawn_enemies(dungeon, start_pos, count = 5, level = 1)
+  # Spawn enemies (fewer at start for easier beginning)
+  enemies <- spawn_enemies(dungeon, start_pos, count = 3, level = 1)
 
   # Apply theme to enemies
   enemies <- apply_theme_to_enemies(enemies, theme, 1)
@@ -51,7 +51,23 @@ init_game_state <- function(seed = NULL, meta = NULL) {
   # Spawn items
   items <- spawn_items(dungeon, start_pos, count = 3)
 
-  # Add starting potions if survivor bonus
+  # Add 2 starting health potions for easier early game
+  for (i in 1:2) {
+    potion <- list(
+      name = "Health Potion",
+      type = "potion",
+      effect = "heal",
+      value = 30,
+      char = "!",
+      x = start_pos$x,
+      y = start_pos$y,
+      id = length(items) + 1,
+      picked = FALSE
+    )
+    items <- c(items, list(potion))
+  }
+
+  # Add extra starting potions if survivor bonus
   if (!is.null(meta) && "survivor" %in% meta$active_bonuses) {
     for (i in 1:2) {
       potion <- list(
@@ -130,9 +146,9 @@ spawn_enemies <- function(dungeon, start_pos, count = 5, level = 1) {
   map <- dungeon$map
 
   enemy_types <- list(
-    list(name = "Goblin", hp = 20, attack = 5, defense = 2, xp = 10, char = "g", is_boss = FALSE),
-    list(name = "Orc", hp = 40, attack = 8, defense = 4, xp = 20, char = "o", is_boss = FALSE),
-    list(name = "Troll", hp = 60, attack = 12, defense = 6, xp = 30, char = "T", is_boss = FALSE)
+    list(name = "Goblin", hp = 15, attack = 4, defense = 1, xp = 10, char = "g", is_boss = FALSE),
+    list(name = "Orc", hp = 35, attack = 7, defense = 3, xp = 20, char = "o", is_boss = FALSE),
+    list(name = "Troll", hp = 55, attack = 10, defense = 5, xp = 30, char = "T", is_boss = FALSE)
   )
 
   # Boss types
