@@ -25,6 +25,9 @@ tryCatch(source("src/special_rooms.R"), error = function(e) cat(""))
 tryCatch(source("src/traps.R"), error = function(e) cat(""))
 tryCatch(source("src/minimap.R"), error = function(e) cat(""))
 tryCatch(source("src/renderer_new.R"), error = function(e) cat(""))
+tryCatch(source("src/daily_challenges.R"), error = function(e) cat(""))
+tryCatch(source("src/character_classes.R"), error = function(e) cat(""))
+tryCatch(source("src/souls_shop.R"), error = function(e) cat(""))
 
 # ============================================================================
 # Main Game Function
@@ -48,40 +51,125 @@ main <- function() {
   # Load meta progression
   meta <- load_meta_progression()
 
-  # Show meta progression stats
-  cat("\033[2J\033[H")  # Clear screen
-  cat("=== ROGUE - The R Dungeon Crawler ===\n\n")
-  show_meta_stats(meta)
-  cat("\nPress ENTER to continue...")
-  readline()
+  # Main menu
+  repeat {
+    cat("\033[2J\033[H")  # Clear screen
+    cat("═══════════════════════════════════════════════════════\n")
+    cat("         🎮 ROGUE - The R Dungeon Crawler 🎮\n")
+    cat("═══════════════════════════════════════════════════════\n\n")
 
-  # Select bonuses
-  if (any(sapply(meta$unlocks, isTRUE))) {
+    show_meta_stats(meta)
+
+    cat("\n═══════════════════════════════════════════════════════\n")
+    cat("MAIN MENU:\n\n")
+    cat("  [1] Start New Run\n")
+    cat("  [2] Daily Challenge\n")
+    cat("  [3] Souls Shop (%d souls)\n", meta$souls)
+    cat("  [4] View Leaderboard\n")
+    cat("  [5] View Achievements\n")
+    cat("  [Q] Quit\n\n")
+    cat("═══════════════════════════════════════════════════════\n")
+    cat("\nSelect option: ")
+
+    choice <- tolower(trimws(readline()))
+
+    if (choice == "q") {
+      cat("\nThanks for playing!\n")
+      return(invisible())
+    } else if (choice == "1") {
+      # Normal run
+      game_mode <- "normal"
+      break
+    } else if (choice == "2") {
+      # Daily challenge
+      if (exists("start_daily_challenge")) {
+        game_mode <- "daily"
+        break
+      } else {
+        cat("\nDaily challenges not available.\n")
+        readline()
+      }
+    } else if (choice == "3") {
+      # Souls shop
+      if (exists("display_souls_shop")) {
+        meta <- display_souls_shop(meta)
+        save_meta_progression(meta)
+      } else {
+        cat("\nSouls shop not available.\n")
+        readline()
+      }
+    } else if (choice == "4") {
+      # Leaderboard
+      if (exists("display_leaderboard")) {
+        cat("\033[2J\033[H")
+        display_leaderboard()
+        cat("\nPress ENTER...")
+        readline()
+      }
+    } else if (choice == "5") {
+      # Achievements
+      if (exists("display_achievements")) {
+        # Need to create a temp state for achievements
+        temp_state <- list(achievements = if (exists("init_achievements")) init_achievements() else list())
+        cat("\033[2J\033[H")
+        display_achievements(temp_state)
+        cat("\nPress ENTER...")
+        readline()
+      }
+    }
+  }
+
+  # Select bonuses (for normal runs)
+  if (game_mode == "normal" && any(sapply(meta$unlocks, isTRUE))) {
     meta <- select_bonuses(meta)
   }
 
-  # Initialize
-  cat("\033[2J\033[H")  # Clear screen
-  cat("═══════════════════════════════════════════════════════\n")
-  cat("         ROGUE - The Ultimate R Dungeon Crawler\n")
-  cat("═══════════════════════════════════════════════════════\n\n")
-  cat("You awaken in a dark dungeon...\n")
-  cat("Find the stairs (>) to descend deeper!\n\n")
-  cat("Quick Controls:\n")
-  cat("  w/a/s/d - Move | o - Auto-explore | e - Interact\n")
-  cat("  m - Minimap    | ? - Full Help    | q - Quit\n\n")
-  cat("NEW FEATURES:\n")
-  cat("  • Status Effects (Poison, Burn, Freeze)\n")
-  cat("  • Item Rarities (Legendary loot!)\n")
-  cat("  • Special Rooms (Shop, Shrine, Treasure)\n")
-  cat("  • 25+ Achievements\n")
-  cat("  • Leaderboard Competition\n")
-  cat("  • Dangerous Traps\n\n")
-  cat("Press ENTER to begin your adventure...")
-  readline()
+  # Handle game mode
+  if (game_mode == "daily") {
+    # Start daily challenge
+    state <- start_daily_challenge(meta)
+  } else {
+    # Normal run - select class if available
+    selected_class <- NULL
 
-  # Create initial game state
-  state <- init_game_state(meta = meta)
+    if (exists("select_character_class")) {
+      selected_class <- select_character_class()
+    }
+
+    # Initialize
+    cat("\033[2J\033[H")  # Clear screen
+    cat("═══════════════════════════════════════════════════════\n")
+    cat("         ROGUE - The Ultimate R Dungeon Crawler\n")
+    cat("═══════════════════════════════════════════════════════\n\n")
+    cat("You awaken in a dark dungeon...\n")
+    cat("Find the stairs (>) to descend deeper!\n\n")
+    cat("Quick Controls:\n")
+    cat("  w/a/s/d - Move | o - Auto-explore | e - Interact\n")
+    cat("  m - Minimap    | ? - Full Help    | q - Quit\n\n")
+    cat("NEW FEATURES:\n")
+    cat("  • 8 Character Classes\n")
+    cat("  • Status Effects (Poison, Burn, Freeze)\n")
+    cat("  • Item Rarities (Legendary loot!)\n")
+    cat("  • Special Rooms (Shop, Shrine, Treasure)\n")
+    cat("  • 25+ Achievements\n")
+    cat("  • Leaderboard & Daily Challenges\n")
+    cat("  • Souls Shop (Permanent Upgrades)\n\n")
+    cat("Press ENTER to begin your adventure...")
+    readline()
+
+    # Create initial game state
+    state <- init_game_state(meta = meta)
+
+    # Apply character class
+    if (!is.null(selected_class) && exists("apply_character_class")) {
+      state <- apply_character_class(state, selected_class)
+    }
+
+    # Apply soul shop upgrades
+    if (exists("apply_soul_shop_upgrades")) {
+      state <- apply_soul_shop_upgrades(state)
+    }
+  }
 
   # Main game loop
   while (state$running) {
@@ -177,6 +265,11 @@ main <- function() {
   # Add to leaderboard
   if (exists("add_leaderboard_entry")) {
     leaderboard <- add_leaderboard_entry(state)
+  }
+
+  # Add to daily leaderboard (if daily challenge)
+  if (!is.null(state$is_daily_challenge) && state$is_daily_challenge && exists("add_daily_leaderboard_entry")) {
+    add_daily_leaderboard_entry(state)
   }
 
   # Game over
