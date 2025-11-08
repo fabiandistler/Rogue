@@ -22,6 +22,7 @@ init_meta_progression <- function() {
     total_deaths = 0,
     victories = 0,
     bosses_defeated = 0,
+    souls = 0,  # Souls currency for shop
 
     # Unlockable bonuses
     unlocks = list(

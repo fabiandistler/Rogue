@@ -49,11 +49,9 @@ color_text <- function(text, color_name) {
 # ============================================================================
 
 clear_screen <- function() {
-  if (USE_CLI) {
-    cli::cli_rule()
-  } else {
-    cat("\033[2J\033[H")
-  }
+  # Use a more efficient clear method to reduce flickering
+  # Move cursor to home and clear from cursor to end of screen
+  cat("\033[H\033[J")
 }
 
 # ============================================================================
@@ -226,13 +224,9 @@ render_ui <- function(state) {
 }
 
 render_cli_health_bar <- function(state) {
-  hp_percent <- state$player$hp / state$player$max_hp
-  cli::cli_progress_bar(
-    format = "HP {cli::pb_current}/{cli::pb_total} [{cli::pb_bar}] {cli::pb_percent}",
-    total = state$player$max_hp,
-    current = state$player$hp,
-    clear = FALSE
-  )
+  # Don't use cli progress bar, it causes rendering issues
+  # Fall back to basic health bar
+  render_basic_health_bar(state)
 }
 
 render_basic_health_bar <- function(state) {
