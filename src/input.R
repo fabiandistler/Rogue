@@ -30,7 +30,21 @@ get_input <- function() {
   } else if (input == "k") {
     return("abilities")
   } else if (input == "m") {
-    return("meta")
+    return("minimap")
+  } else if (input == "p") {
+    return("meta")  # Changed from 'm' to 'p' for progression
+  } else if (input == "o") {
+    return("auto_explore")
+  } else if (input == "f") {
+    return("search")
+  } else if (input == "e") {
+    return("interact")
+  } else if (input == "v") {
+    return("achievements")
+  } else if (input == "b") {
+    return("leaderboard")
+  } else if (input == "?") {
+    return("help")
   } else {
     return("invalid")
   }

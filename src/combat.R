@@ -5,9 +5,14 @@
 
 # Player attacks enemy
 player_attack <- function(state, enemy) {
-  # Calculate damage
+  # Calculate base damage
   damage <- max(1, state$player$attack + state$player$weapon$damage - enemy$defense)
   damage <- damage + sample(-2:2, 1)  # Random variance
+
+  # Apply status effect bonuses (if available)
+  if (exists("get_status_attack_bonus") && !is.null(state$player$status_effects)) {
+    damage <- damage + get_status_attack_bonus(state$player$status_effects)
+  }
 
   # Apply power strike bonus
   if (!is.null(state$abilities$power_strike_active) && state$abilities$power_strike_active) {
@@ -21,6 +26,20 @@ player_attack <- function(state, enemy) {
     damage <- ceiling(damage * 1.2)
   }
 
+  # Check for critical hit (if player has crit from item)
+  crit_chance <- 0
+  if (!is.null(state$player$weapon$prefix) && !is.null(state$player$weapon$prefix$crit_chance)) {
+    crit_chance <- state$player$weapon$prefix$crit_chance
+  }
+  if (!is.null(state$player$weapon$suffix) && !is.null(state$player$weapon$suffix$crit_chance)) {
+    crit_chance <- crit_chance + state$player$weapon$suffix$crit_chance
+  }
+
+  if (crit_chance > 0 && runif(1) < crit_chance) {
+    damage <- damage * 2
+    state <- add_message(state, "CRITICAL HIT!")
+  }
+
   # Find enemy index
   enemy_idx <- which(sapply(state$enemies, function(e) e$id == enemy$id))
 
@@ -32,6 +51,11 @@ player_attack <- function(state, enemy) {
     "You hit %s for %d damage!",
     enemy$name, damage
   ))
+
+  # Try to apply status effects from weapon
+  if (exists("try_apply_status_on_hit")) {
+    state <- try_apply_status_on_hit(state, "enemy", enemy$id, state$player$weapon)
+  }
 
   # Check if enemy died
   if (state$enemies[[enemy_idx]]$hp <= 0) {
@@ -78,14 +102,43 @@ player_attack <- function(state, enemy) {
 
 # Enemy attacks player
 enemy_attack <- function(state, enemy) {
+  # Check for dodge (from armor suffix/prefix)
+  dodge_chance <- 0
+  if (!is.null(state$player$armor$prefix) && !is.null(state$player$armor$prefix$dodge_chance)) {
+    dodge_chance <- state$player$armor$prefix$dodge_chance
+  }
+  if (!is.null(state$player$armor$suffix) && !is.null(state$player$armor$suffix$dodge_chance)) {
+    dodge_chance <- dodge_chance + state$player$armor$suffix$dodge_chance
+  }
+
+  if (dodge_chance > 0 && runif(1) < dodge_chance) {
+    state <- add_message(state, sprintf("You dodge %s's attack!", enemy$name))
+    return(state)
+  }
+
   # Calculate damage
   damage <- max(1, enemy$attack - state$player$defense - state$player$armor$defense)
   damage <- damage + sample(-1:1, 1)  # Random variance
+
+  # Apply status effect defense bonus (if available)
+  if (exists("get_status_defense_bonus") && !is.null(state$player$status_effects)) {
+    damage <- max(1, damage - get_status_defense_bonus(state$player$status_effects))
+  }
 
   # Apply shield wall reduction
   if (!is.null(state$abilities$abilities$shield_wall$active) && state$abilities$abilities$shield_wall$active) {
     damage <- ceiling(damage * 0.5)
     state <- add_message(state, "Shield Wall blocks damage!")
+  }
+
+  # Apply spiked armor reflection (if available)
+  if (!is.null(state$player$armor$prefix) && !is.null(state$player$armor$prefix$reflect_damage)) {
+    reflect_damage <- state$player$armor$prefix$reflect_damage
+    enemy_idx <- which(sapply(state$enemies, function(e) e$id == enemy$id))
+    if (length(enemy_idx) > 0) {
+      state$enemies[[enemy_idx]]$hp <- state$enemies[[enemy_idx]]$hp - reflect_damage
+      state <- add_message(state, sprintf("Your armor reflects %d damage!", reflect_damage))
+    }
   }
 
   # Apply damage to player
