@@ -11,7 +11,7 @@ get_daily_seed <- function() {
   # Generate seed based on current date
   date_str <- format(Sys.Date(), "%Y%m%d")
   seed <- as.integer(charToRaw(date_str))
-  seed <- sum(seed * (1:length(seed)))
+  seed <- sum(seed * seq_along(seed))
   return(seed)
 }
 
@@ -128,6 +128,14 @@ get_challenge_modifiers <- function() {
         state$challenge_modifier <- "lucky"
         state
       }
+    ),
+    event_hunter = list(
+      name = "Event Hunter",
+      description = "Double the random events per level",
+      apply = function(state) {
+        state$challenge_modifier <- "event_hunter"
+        state
+      }
     )
   )
 }
@@ -188,7 +196,7 @@ start_daily_challenge <- function(meta) {
   # Load daily challenge stats
   daily_stats <- load_daily_stats()
 
-  if (!is.null(daily_stats) && daily_stats$date == as.character(Sys.Date())) {
+  if (!is.null(daily_stats) && !is.null(daily_stats$date) && daily_stats$date == as.character(Sys.Date())) {
     cat(sprintf("Your best today: %s\n", format(daily_stats$best_score, big.mark = ",")))
     cat(sprintf("Attempts today: %d\n\n", daily_stats$attempts))
   }
