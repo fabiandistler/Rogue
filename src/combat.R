@@ -42,6 +42,7 @@ player_attack <- function(state, enemy) {
 
   # Find enemy index
   enemy_idx <- which(sapply(state$enemies, function(e) e$id == enemy$id))
+  if (length(enemy_idx) == 0) return(state)
 
   # Apply damage
   state$enemies[[enemy_idx]]$hp <- state$enemies[[enemy_idx]]$hp - damage

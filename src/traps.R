@@ -198,7 +198,7 @@ find_valid_trap_locations <- function(state) {
 
   # Shuffle locations
   if (length(locations) > 0) {
-    locations <- locations[sample(1:length(locations))]
+    locations <- locations[sample.int(length(locations))]
   }
 
   return(locations)

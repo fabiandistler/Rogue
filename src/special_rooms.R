@@ -64,6 +64,14 @@ get_special_room_types <- function() {
       icon = "📚",
       spawn_chance = 0.07,
       description = "Ancient knowledge lies here"
+    ),
+    anvil = list(
+      name = "Blacksmith's Anvil",
+      char = "&",
+      color = "yellow",
+      icon = "🔨",
+      spawn_chance = 0.06,
+      description = "An anvil for crafting and reforging"
     )
   )
 }
@@ -141,6 +149,7 @@ init_room_data <- function(room_type, level) {
     altar = init_altar_data(level),
     fountain = init_fountain_data(level),
     library = init_library_data(level),
+    anvil = if (exists("init_anvil_data")) init_anvil_data(level) else list(),
     list()
   )
 }

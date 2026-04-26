@@ -24,10 +24,11 @@ tryCatch(source("src/leaderboard.R"), error = function(e) cat(""))
 tryCatch(source("src/special_rooms.R"), error = function(e) cat(""))
 tryCatch(source("src/traps.R"), error = function(e) cat(""))
 tryCatch(source("src/minimap.R"), error = function(e) cat(""))
-tryCatch(source("src/renderer_new.R"), error = function(e) cat(""))
 tryCatch(source("src/daily_challenges.R"), error = function(e) cat(""))
 tryCatch(source("src/character_classes.R"), error = function(e) cat(""))
 tryCatch(source("src/souls_shop.R"), error = function(e) cat(""))
+tryCatch(source("src/events.R"), error = function(e) cat(""))
+tryCatch(source("src/crafting.R"), error = function(e) cat(""))
 
 # ============================================================================
 # Main Game Function

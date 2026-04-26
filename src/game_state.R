@@ -88,6 +88,7 @@ init_game_state <- function(seed = NULL, meta = NULL) {
   # Initialize new systems (if available)
   traps <- if (exists("generate_traps")) generate_traps(list(map = dungeon$map, level = 1, rooms = dungeon$rooms, player = list(x = start_pos$x, y = start_pos$y), stairs_pos = dungeon$stairs_pos, enemies = enemies, items = items)) else list()
   special_rooms <- if (exists("generate_special_rooms")) generate_special_rooms(list(level = 1, rooms = dungeon$rooms)) else list()
+  events <- if (exists("generate_dungeon_events")) generate_dungeon_events(list(level = 1, rooms = dungeon$rooms)) else list()
   achievements <- if (exists("init_achievements")) init_achievements() else list()
 
   # Create state
@@ -121,6 +122,7 @@ init_game_state <- function(seed = NULL, meta = NULL) {
     # New systems
     traps = traps,
     special_rooms = special_rooms,
+    events = events,
     achievements = achievements,
     ui = list(
       minimap_enabled = FALSE,
@@ -162,7 +164,7 @@ spawn_enemies <- function(dungeon, start_pos, count = 5, level = 1) {
   # Check if this is a boss level (every 3 levels)
   is_boss_level <- (level %% 3 == 0)
 
-  if (is_boss_level) {
+  if (is_boss_level && length(boss_types) > 0) {
     # Spawn a boss
     boss_idx <- min(ceiling(level / 3), length(boss_types))
     boss_type <- boss_types[[boss_idx]]
@@ -388,8 +390,19 @@ process_action <- function(state, action) {
           return(state)
         }
       }
-      state <- add_message(state, "Nothing to interact with here.")
     }
+
+    # Interact with random event
+    if (exists("get_event_at") && !is.null(state$events)) {
+      hit <- get_event_at(state, state$player$x, state$player$y)
+      if (!is.null(hit)) {
+        state <- interact_event(state, hit$index)
+        state$player_acted <- TRUE
+        return(state)
+      }
+    }
+
+    state <- add_message(state, "Nothing to interact with here.")
     return(state)
   }
 
@@ -431,6 +444,16 @@ process_action <- function(state, action) {
             state$message_log <- c(state$message_log,
                                   sprintf("You found a %s! Press 'e' to interact.", room$name))
           }
+        }
+      }
+
+      # Check for random events
+      if (exists("get_event_at") && !is.null(state$events)) {
+        hit <- get_event_at(state, new_pos$x, new_pos$y)
+        if (!is.null(hit)) {
+          state$message_log <- c(state$message_log,
+                                sprintf("You sense something here (%s). Press 'e' to investigate.",
+                                        hit$event$name))
         }
       }
 
@@ -496,6 +519,7 @@ get_item_at <- function(state, x, y) {
 # Pickup item
 pickup_item <- function(state, item) {
   item_idx <- which(sapply(state$items, function(i) i$id == item$id))
+  if (length(item_idx) == 0) return(state)
   state$items[[item_idx]]$picked <- TRUE
 
   if (item$effect == "heal") {
@@ -596,6 +620,10 @@ descend_stairs <- function(state) {
 
   if (exists("generate_special_rooms")) {
     state$special_rooms <- generate_special_rooms(state)
+  }
+
+  if (exists("generate_dungeon_events")) {
+    state$events <- generate_dungeon_events(state)
   }
 
   # Update max level reached
